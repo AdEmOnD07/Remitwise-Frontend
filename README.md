@@ -2,7 +2,7 @@
 
 Frontend application for the RemitWise remittance and financial planning platform.
 
-> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations. When building UI, follow the [component lifecycle](docs/COMPONENT_LIFECYCLE.md) from Figma and design tokens through stories, tests, and production. Then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers.
+> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers, [docs/CANONICALISATION.md](docs/CANONICALISATION.md) for how the codebase trims whitespace, casefolds, and handles byte-order marks (see also [docs/string-normalisation.md](docs/string-normalisation.md) for the per-field reference table), and [docs/DESIGN_TOKEN_MIGRATION.md](docs/DESIGN_TOKEN_MIGRATION.md) for how to rename or deprecate a design token.
 
 ## Overview
 
@@ -723,6 +723,11 @@ GET  /api/admin/audit         # Admin-only audit events
 - Responsive design with mobile-first approach
 - Motion vocabulary and standard animations are documented in [docs/MOTION.md](docs/MOTION.md).
 - Components are structured for easy integration
+
+Design token reference and migration guides:
+
+- [docs/THEMING.md](docs/THEMING.md) — full catalogue of CSS custom properties, Tailwind color, spacing, focus-ring, and animation tokens with semantic roles and usage examples.
+- [docs/DESIGN_TOKEN_MIGRATION.md](docs/DESIGN_TOKEN_MIGRATION.md) — step-by-step guide for safely renaming or deprecating a token, including a PR checklist.
 
 ## API Endpoints
 
