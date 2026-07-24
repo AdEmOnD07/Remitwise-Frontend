@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WalletProvider } from "stellar-wallet-kit";
 import { DensityProvider } from "@/lib/context/DensityContext";
 import { ThemeProvider } from "@/lib/context/ThemeContext";
@@ -11,6 +12,20 @@ import ToastRegion from "@/components/ToastRegion";
 import SessionExpiryProvider from "@/components/SessionExpiryProvider";
 import CommandPalette from "@/components/CommandPalette";
 import DevRequestIdDisplay from "@/components/DevRequestIdDisplay";
+import { SWR_DEFAULTS } from "@/lib/config/swr";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: SWR_DEFAULTS.staleTime,
+      gcTime: SWR_DEFAULTS.gcTime,
+      refetchOnWindowFocus: SWR_DEFAULTS.refetchOnWindowFocus,
+      refetchOnReconnect: SWR_DEFAULTS.refetchOnReconnect,
+      retry: SWR_DEFAULTS.retry,
+      retryDelay: SWR_DEFAULTS.retryDelay,
+    },
+  },
+});
 
 import { ShortcutHelpProvider } from "@/lib/context/ShortcutHelpContext";
 import ShortcutHelpModal from "@/components/ShortcutHelpModal";
@@ -26,8 +41,9 @@ import ShortcutHelpModal from "@/components/ShortcutHelpModal";
  */
 export default function Providers({ children }: { children: ReactNode }) {
   return (
-    <WalletProvider>
-      <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <WalletProvider>
+        <ThemeProvider>
         <ToastProvider>
           <DensityProvider>
             <AsyncOperationsProvider>
@@ -43,7 +59,8 @@ export default function Providers({ children }: { children: ReactNode }) {
             </AsyncOperationsProvider>
           </DensityProvider>
         </ToastProvider>
-      </ThemeProvider>
-    </WalletProvider>
+        </ThemeProvider>
+      </WalletProvider>
+    </QueryClientProvider>
   );
 }
