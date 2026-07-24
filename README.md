@@ -2,7 +2,7 @@
 
 Frontend application for the RemitWise remittance and financial planning platform.
 
-> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers, and [docs/CANONICALISATION.md](docs/CANONICALISATION.md) for how the codebase trims whitespace, casefolds, and handles byte-order marks (see also [docs/string-normalisation.md](docs/string-normalisation.md) for the per-field reference table).
+> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read the [Frontend Contributor Guide](docs/FRONTEND_CONTRIBUTING.md) for local setup and frontend preferred patterns. Additionally, read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers.
 
 ## Overview
 
@@ -36,15 +36,21 @@ The frontend includes placeholder pages and components for:
 
 Dashboard, Bills, Insights, and Transaction History now use route-level skeleton screens built from `components/ui/Skeleton.tsx` and `components/ui/LoadingSkeletons.tsx` so primary panels load with stable layout blocks instead of ad-hoc spinners.
 
-## Stale-Data Warning Banner
+## Recent Items (Command Palette)
 
-When a live fetch fails (network error, non-2xx, or timeout), pages that have previously loaded data show the last-good cached payload together with an amber **StaleBanner** instead of replacing the entire page with an error state. The banner lets users continue working while connectivity recovers and provides a one-click Refresh action.
+The Command Palette (`Ctrl/⌘ + K`) now tracks the **top 5 items the current user opened recently**, persisted in `localStorage` under the key defined in [`lib/config/recent.ts`](./lib/config/recent.ts). When the palette opens with an empty search query, a "Recently Opened" section appears at the top, showing the last 5 commands selected. The feature is powered by the generic [`useRecentItems`](./lib/hooks/useRecentItems.ts) hook, which can be reused for any component that needs MRU tracking.
 
-- **Hook**: `lib/hooks/useStaleFetch.ts` — wraps `apiClient.get()` with a `sessionStorage` fallback.
-- **Component**: `components/ui/StaleBanner.tsx` — dismissible amber banner using `status.warning.*` design tokens.
-- **Wired pages**: Dashboard (`/api/dashboard`) and Bills (`/api/bills` + `/api/bills/total-unpaid`).
+**Key details:**
 
-See [docs/stale-data-banner.md](docs/stale-data-banner.md) for architecture details, the state machine, and a recipe for adding stale support to new pages.
+- **Storage key:** `remitwise_recent_commands` (configured in `lib/config/recent.ts`)
+- **Hook:** `useRecentItems<T>(storageKey, maxItems?, isEqual?)` — generic, reusable, SSR-safe
+- **Deduplication:** Re-selecting an item moves it to the top without creating duplicates
+- **Cap:** Oldest items are evicted when the list exceeds 5
+- **Graceful degradation:** If `localStorage` is unavailable the feature silently falls back to an empty list
+
+## Browser Support & Polyfills
+
+To maintain a smooth background task experience across all platforms, this app polyfills missing native APIs (such as `window.requestIdleCallback` and `window.cancelIdleCallback` which are unsupported in Safari) using a standardized `setTimeout` wrapper. This polyfill is injected automatically at the client boundary (via `Providers.tsx`), so frontend engineers and downstream libraries can confidently use `requestIdleCallback` without explicit platform guard checks.
 
 ## Sentry
 
