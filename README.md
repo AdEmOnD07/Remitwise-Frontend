@@ -37,6 +37,10 @@ The frontend includes placeholder pages and components for:
 
 Dashboard, Bills, and Insights now use route-level skeleton screens built from `components/ui/Skeleton.tsx` so primary panels load with stable layout blocks instead of ad-hoc spinners. For detailed guidelines and implementation patterns on all UI states (Default, Error, Disabled, and Loading), see [docs/component-states.md](docs/component-states.md).
 
+## Performance Budgets
+
+Every page route has a per-route load-time budget based on its user impact tier. These budgets are enforced in CI via Lighthouse E2E tests and monitored in production through structured request logs. For the full route-to-budget map, measurement approach, and how to add budgets for new routes, see [docs/LOAD_TIME_BUDGETS.md](docs/LOAD_TIME_BUDGETS.md).
+
 ## Sentry
 
 Sentry is wired through the client, server, and edge config files with separate environment variables for each runtime:
