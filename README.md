@@ -16,6 +16,7 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Utility-first styling
+- **Typography Scale** - See [docs/TYPOGRAPHY_SCALE.md](docs/TYPOGRAPHY_SCALE.md) for the project typography scale, font weights, line heights, and usage guidance.
 - **Lucide React** - Icon library — see [docs/ICON_SYSTEM.md](docs/ICON_SYSTEM.md) for usage, sizing, and adding custom icons
 
 ## Features (Placeholders)
