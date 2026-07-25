@@ -37,7 +37,7 @@ The frontend includes placeholder pages and components for:
 
 ## Loading States
 
-Dashboard, Bills, and Insights now use route-level skeleton screens built from `components/ui/Skeleton.tsx` so primary panels load with stable layout blocks instead of ad-hoc spinners. For detailed guidelines and implementation patterns on all UI states (Default, Error, Disabled, and Loading), see [docs/component-states.md](docs/component-states.md).
+Dashboard, Bills, and Insights now use route-level skeleton screens built from `components/ui/Skeleton.tsx` so primary panels load with stable layout blocks instead of ad-hoc spinners. For detailed guidelines and implementation patterns on all UI states (Default, Error, Disabled, and Loading), see [docs/COMPONENT_STATES.md](docs/COMPONENT_STATES.md).
 
 ## Performance Budgets
 
@@ -231,7 +231,7 @@ remitwise-frontend/
 │   └── auth.ts              # Auth middleware
 ├── docs/                    # Documentation
 │   ├── API_ROUTES.md        # API routes documentation
-│   ├── component-states.md  # Standard UI states (default, error, disabled, loading) guide
+│   ├── COMPONENT_STATES.md  # Standard UI states (default, error, disabled, loading) guide
 │   ├── contract-cache.md    # Contract caching architecture and guidelines
 │   ├── frame-budget-rules.md    # Frame budget performance guidelines
 │   └── RESPONSIVE_TESTING.md # Guide to verifying responsive breakpoints and layout behavior
@@ -941,7 +941,7 @@ To enable downstream operators, contracts, and frontend engineers to style the l
 - **CSS Variables**: Exposes `--skeleton-bg-start`, `--skeleton-bg-via`, and `--skeleton-bg-end` to customize the shimmer gradient colors.
 - **Classes & Attributes**: Every skeleton renders with specific selector hooks (e.g. `.loading-skeleton` / `data-loading-state="skeleton"`).
 
-For full details, selectors list, and examples, see the [Frontend Component States Guide](docs/component-states.md).
+For full details, selectors list, and examples, see the [Frontend Component States Guide](docs/COMPONENT_STATES.md).
 
 ## SEO & Social Sharing Preview
 
