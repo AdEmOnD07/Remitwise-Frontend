@@ -96,6 +96,27 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Mock Backend
+
+Run the local mock backend with one command:
+
+```bash
+npm run mock:backend
+```
+
+The server listens on `http://localhost:4010` by default. Set `MOCK_BACKEND_PORT`
+to use a different port. The command is idempotent and keeps all data in memory,
+so stopping and restarting it does not create or migrate local state.
+
+Useful endpoints:
+
+- `GET /api/health`
+- `GET /api/dashboard`
+- `GET /api/remittance/quote?amountMinor=10000&currency=USD&toCurrency=NGN`
+
+Mock money values are returned as integer minor units, for example
+`amountMinor`, `feeMinor`, and `receiveAmountMinor`.
+
 ### Build
 
 ```bash
