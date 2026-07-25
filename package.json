@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
+    "@hapi/formula": "^4.0.0",
     "@hapi/hoek": "^9.3.0",
     "@playwright/test": "^1.58.2",
     "@storybook/addon-essentials": "^8.6.12",
