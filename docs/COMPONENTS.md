@@ -1,182 +1,84 @@
 # Components
 
-For the contributor workflow that takes a component from Figma through design
-tokens, Storybook stories, tests, and production integration, see
-[COMPONENT_LIFECYCLE.md](COMPONENT_LIFECYCLE.md).
+> For icon usage, sizing conventions, and how to add a custom icon, see [ICON_SYSTEM.md](ICON_SYSTEM.md).
 
-## Skeleton / SkeletonGroup
+## Notice
 
-Route-level and widget-level placeholder components used during data loading.
-Purely decorative shapes are hidden from assistive technology; `SkeletonGroup`
-wraps them in a polite live region so screen-reader users receive an
-announcement.
+A reusable inline banner / callout for displaying informational, warning, error,
+and success messages consistently across the app.
 
-**File:** `components/ui/Skeleton.tsx`
+**File:** `components/Notice.tsx`
 
-### `<Skeleton>` props
+### Variants
 
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `variant` | `"shimmer" \| "static"` | `"shimmer"` | `shimmer` plays a travelling-highlight animation; `static` is a flat fill that never animates. Both degrade to the static fill under `prefers-reduced-motion: reduce`. |
-| `className` | `string` | — | Extra Tailwind classes (width, height, border-radius). |
-| `style` | `CSSProperties` | — | Inline styles, e.g. `{ height: "40%" }` for proportional bar charts. |
-
-`<Skeleton>` always renders with `aria-hidden="true"` — it is decorative and
-must not be announced directly.
-
-### `<SkeletonGroup>` props
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `label` | `string` | `"Loading"` | Announced by screen readers while the placeholder is visible. Use a surface-specific string: `"Loading transaction history"`. |
-| `children` | `ReactNode` | — | One or more `<Skeleton>` shapes (or higher-level skeleton composites). |
-| `className` | `string` | — | Layout classes on the wrapper (`"space-y-4"`, `"grid gap-6"`, etc.). |
-| `style` | `CSSProperties` | — | Inline styles on the wrapper. |
-
-`SkeletonGroup` renders `role="status"` / `aria-busy="true"` and a visually-
-hidden `<span>` containing the label. **Do not nest `SkeletonGroup` inside
-another `SkeletonGroup`** — nesting creates double-announcements.
-
-### Usage
-
-```tsx
-import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
-
-// Minimal — one group per loading surface
-<SkeletonGroup label="Loading transaction history" className="space-y-3">
-  <Skeleton className="h-12 w-full rounded-xl" />
-  <Skeleton className="h-12 w-full rounded-xl" />
-</SkeletonGroup>
-```
-
-### Higher-level composites
-
-| Export | Description |
-|---|---|
-| `<SkeletonCard variant="default\|stat\|chart">` | Single card-shaped placeholder |
-| `<SkeletonList rows={5} variant="table\|cards">` | Multi-row list placeholder |
-| `<SkeletonChart type="bar\|line\|donut">` | Chart-area placeholder |
-| `<SkeletonWidget>` | Generic widget shell |
-| `<DashboardLoadingSkeleton>` | Full dashboard route skeleton (from `components/ui/LoadingSkeletons.tsx`) |
-| `<BillsLoadingSkeleton>` | Bills route skeleton |
-| `<GoalsLoadingSkeleton>` | Goals route skeleton |
-| `<InsightsLoadingSkeleton>` | Insights route skeleton |
-| `<InsightLoadingSkeleton>` | Single-insight route skeleton |
-| `<TransactionHistoryLoadingSkeleton>` | Transaction history route skeleton |
-
-### Theme tokens
-
-All individual `<Skeleton>` shapes draw their colours from CSS custom
-properties so operators can re-skin them without touching source:
-
-| Variable | Light default | Dark default | Role |
-|---|---|---|---|
-| `--skeleton-static` | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.08)` | Flat fill / reduced-motion fallback |
-| `--skeleton-base` | `rgba(0,0,0,0.06)` | `rgba(255,255,255,0.05)` | Base of shimmer gradient |
-| `--skeleton-highlight` | `rgba(0,0,0,0.14)` | `rgba(255,255,255,0.14)` | Peak highlight of shimmer sweep |
-
-The legacy `.loading-skeleton` wrapper class uses `--skeleton-bg-start`,
-`--skeleton-bg-via`, and `--skeleton-bg-end` (kept for backwards compatibility).
-
-All six variables are declared in `app/globals.css` under `:root` (light) and
-`@media (prefers-color-scheme: dark) > :root` (dark).
-
-### Selector hooks
-
-| CSS selector | `data-*` attribute | Used on |
-|---|---|---|
-| `.rw-skeleton` | — | Every individual shape |
-| `.rw-skeleton--shimmer` | — | Shapes with the shimmer variant |
-| — | `data-loading-state="skeleton"` | `SkeletonGroup` wrapper |
-| `.loading-skeleton-dashboard` | `data-loading-state="dashboard"` | Dashboard shell |
-| `.loading-skeleton-bills` | `data-loading-state="bills"` | Bills shell |
-| `.loading-skeleton-insights` | `data-loading-state="insights"` | Insights shell |
-| `.loading-skeleton-card` | `data-loading-state="card"` | `SkeletonCard` |
-| `.loading-skeleton-list` | `data-loading-state="list"` | `SkeletonList` |
-| `.loading-skeleton-chart` | `data-loading-state="chart"` | `SkeletonChart` |
-| `.loading-skeleton-shell` | `data-loading-state="shell"` | Section shells inside route skeletons |
-| `.loading-skeleton-widget` | `data-loading-state="widget"` | `SkeletonWidget` |
-
-### Stories
-
-- `UI/Skeleton` — `Shimmer`, `Static`, `ShimmerVersusStatic`, `Shapes`
-- `UI/SkeletonGroup` — `Default`, `StaticShapes`
-
-### Tests
-
-`tests/unit/ui/skeleton.test.tsx` — covers `Skeleton` class contracts,
-`SkeletonGroup` live-region semantics (role, aria-busy, label announcement,
-visually-hidden text, class forwarding, no-double-announce nesting, axe
-audit), and the reduced-motion CSS contract.
-
----
-
-
-
-A fully accessible calendar grid date-picker that meets **WCAG 2.1 AA**.
-
-**File:** `components/ui/AccessibleCalendarGrid.tsx`
+| Variant | ARIA role | Use for |
+| --- | --- | --- |
+| `info` | `role="status"` | Non-urgent contextual messages (e.g. read-only mode, feature tips) |
+| `warning` | `role="alert"` | Caution states requiring user awareness (e.g. rate changes, pending verification) |
+| `error` | `role="alert"` | Failure or blocking conditions (e.g. failed transfers, validation errors) |
+| `success` | `role="status"` | Positive confirmations (e.g. payment sent, settings saved) |
 
 ### Props
 
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `value` | `CalendarDate \| null` | `null` | Currently selected date |
-| `onChange` | `(date: CalendarDate) => void` | — | Fired when the user selects a date |
-| `minDate` | `CalendarDate` | — | Minimum selectable date (inclusive) |
-| `maxDate` | `CalendarDate` | — | Maximum selectable date (inclusive) |
-| `locale` | `string` | `"en-US"` | Locale for month/weekday names (e.g. `"ar-SA"`, `"fr-FR"`) |
-| `firstDayOfWeek` | `0 \| 1` | `0` | `0` = Sunday, `1` = Monday (ISO 8601) |
-| `className` | `string` | — | Extra classes on the wrapper |
-| `ariaLabel` | `string` | `"Calendar"` | Accessible label for the widget |
+| Prop | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `variant` | `"info" \| "warning" \| "error" \| "success"` | ✓ | — | Controls colour tokens, icon, and ARIA role. |
+| `children` | `React.ReactNode` | ✓ | — | Body content. Accepts strings or rich React nodes. |
+| `title` | `string` | — | — | Optional one-line heading rendered above the body. |
+| `onDismiss` | `() => void` | — | — | When provided, renders a dismiss (×) button. Caller controls removal from DOM. |
+| `action` | `{ label: string; onClick: () => void }` | — | — | Optional inline CTA rendered below the body. Use for a single contextual action. |
+| `className` | `string` | — | `""` | Extra Tailwind classes on the wrapper (for layout overrides like margin or width). |
 
-### Keyboard navigation
+### Styling
 
-| Key | Action |
-|---|---|
-| Arrow Left / Right | Move focus one day backward / forward |
-| Arrow Up / Down | Move focus one week backward / forward |
-| Home | First day of the current week |
-| End | Last day of the current week |
-| Page Up | Previous month |
-| Page Down | Next month |
-| Enter / Space | Select the focused date |
-| Tab | Move to the prev/next month navigation buttons |
+- Surfaces use `status.{variant}.soft` (background) and `status.{variant}.border` (border) tokens from `tailwind.config.js` — no hardcoded values.
+- Icon colour and title colour use `status.{variant}.fg`.
+- Body text uses `text-white/70` for a softer contrast on the dark canvas.
+- Icons are Lucide: `Info` (info), `AlertTriangle` (warning), `AlertCircle` (error), `CheckCircle2` (success).
 
 ### Accessibility
 
-- Container: `role="application"` with `aria-label`
-- Grid: `role="grid"` labelled by the month/year heading
-- Column headers: `role="columnheader"` (weekday abbreviations)
-- Day cells: `role="gridcell"` with `aria-selected`, `aria-disabled`, `aria-label` (full long-form date string), and `aria-current="date"` for today
-- Month navigation: announced via `aria-live="polite"` region
-- Focus ring: `ring-focus` token (3 px), `ring-offset-focus` token (4 px)
-- Touch targets: `h-11 w-11` (44 × 44 px, WCAG 2.1 minimum)
-- Roving `tabIndex` pattern keeps a single tab stop in the grid
+- `role="alert"` (assertive) for `error` and `warning` variants; `role="status"` (polite) for `info` and `success`.
+- `aria-atomic="true"` on the wrapper so the full notice is announced as a unit.
+- Status icon has `aria-hidden="true"` — it is a visual supplement to the text.
+- Dismiss button has `aria-label="Dismiss"` and is keyboard-operable.
+- Action button has `focus-visible` ring using `focus-visible:ring-2 focus-visible:ring-current`.
+- Color is never the sole differentiator — each variant also has a distinct icon shape.
 
-### RTL
-
-Pass an RTL locale (`"ar"`, `"he"`, `"fa"`, `"ur"`, …) and the component automatically sets `dir="rtl"` on its wrapper and flips the prev/next chevrons.
-
-### Usage
+### Usage examples
 
 ```tsx
-import { AccessibleCalendarGrid } from "@/components/ui/AccessibleCalendarGrid";
+// Informational, body-only
+<Notice variant="info">Your wallet is connected in read-only mode.</Notice>
 
-<AccessibleCalendarGrid
-  value={{ year: 2026, month: 7, day: 15 }}
-  onChange={(date) => console.log(date)}
-  ariaLabel="Remittance date picker"
-/>
+// Warning with title and dismiss (controlled)
+const [open, setOpen] = useState(true);
+{open && (
+  <Notice variant="warning" title="Rates have changed" onDismiss={() => setOpen(false)}>
+    Exchange rates updated since you started this transfer. The quoted amount may differ.
+  </Notice>
+)}
+
+// Error with retry action
+<Notice
+  variant="error"
+  title="Transfer failed"
+  action={{ label: "Retry", onClick: handleRetry }}
+>
+  The transfer could not be completed. Please check your balance.
+</Notice>
+
+// Success, no title
+<Notice variant="success">Settings saved successfully.</Notice>
 ```
 
-### Stories
+### Integration
 
-`Components/UI/AccessibleCalendarGrid` — eight stories covering: `Default`, `WithSelectedDate`, `Controlled`, `WithMinMax`, `RTLArabic`, `RTLHebrew`, `MondayFirstDay`, `FrenchLocale`, `JapaneseLocale`.
+Import directly — no context provider required.
 
-### Tests
-
-`components/ui/AccessibleCalendarGrid.test.tsx` — 30 tests covering ARIA roles and structure, keyboard navigation (Arrow keys, Page Up/Down, Enter/Space), mouse interaction, RTL, and four axe audit passes (zero violations).
+```tsx
+import Notice from "@/components/Notice";
+```
 
 ---
 
