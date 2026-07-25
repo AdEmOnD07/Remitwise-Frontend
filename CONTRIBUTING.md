@@ -66,7 +66,10 @@ All commands below are verified against `package.json`. For contributor testing 
 ### Quick reference
 
 ```bash
+just check                # Run lint + typecheck + test (requires `just`)
+npm run check             # Run lint + typecheck + test (no extra deps)
 npm run lint              # ESLint across the whole project
+npm run typecheck         # TypeScript type-check (tsc --noEmit)
 npm run build             # Next.js production build (also runs tsc)
 npm run test              # Alias for test:unit
 npm run test:unit         # Runs BOTH node:test suites AND Vitest unit tests (see below)

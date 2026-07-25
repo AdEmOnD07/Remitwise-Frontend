@@ -12,6 +12,8 @@
     "check:img-alt": "node scripts/check-img-alt.js",
     "lint": "eslint . && npm run check:img-alt",
     "check:img-alt": "node scripts/check-img-alt.js",
+    "typecheck": "tsc",
+    "check": "npm run lint && npm run typecheck && npm test",
     "test": "npm run test:unit",
     "test:coverage": "node node_modules/vitest/vitest.mjs run --config vitest.config.mjs --configLoader runner --coverage",
     "test:watch": "node node_modules/vitest/vitest.mjs --config vitest.config.mjs --configLoader runner",
