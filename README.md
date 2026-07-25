@@ -197,6 +197,8 @@ RemitWise implements a nonce-based challenge-response authentication mechanism t
 3. **Submit Signature:** The client submits `{"address": "...", "signature": "..."}` to `POST /api/auth/login`. The signature should be base64-encoded.
 4. **Verification:** The backend converts the nonce to a Buffer and verifies the base64 signature against the supplied public address using `@stellar/stellar-sdk` (`Keypair.fromPublicKey(address).verify(nonceBuffer, signatureBuffer)`). Invalid signatures or missing/expired nonces will receive a `401 Unauthorized`.
 
+See [Magic Links](docs/MAGIC_LINKS.md) for nonce generation details, TTL values, and known limitations.
+
 ### End-to-End Testing
 
 To run the Playwright end-to-end tests for authentication and protected routes:
