@@ -108,9 +108,9 @@ const MobileNav = () => {
                     <nav aria-label="Mobile navigation" className="flex-1 p-4 sm:p-6 space-y-8 pb-24">
                         {sections.map((section, idx) => (
                             <div key={idx} className="space-y-4">
-                                <h3 className="text-xs font-bold text-white/70 uppercase tracking-[0.2rem] px-2">
+                                <h2 className="text-xs font-bold text-white/70 uppercase tracking-[0.2rem] px-2">
                                     {section.title}
-                                </h3>
+                                </h2>
                                 <ul className="space-y-1">
                                     {section.links.map((link) => (
                                         <li key={link.name}>
