@@ -37,7 +37,7 @@ The frontend includes placeholder pages and components for:
 
 ## Loading States
 
-Dashboard, Bills, and Insights now use route-level skeleton screens built from `components/ui/Skeleton.tsx` so primary panels load with stable layout blocks instead of ad-hoc spinners. For detailed guidelines and implementation patterns on all UI states (Default, Error, Disabled, and Loading), see [docs/component-states.md](docs/component-states.md).
+Dashboard, Bills, and Insights now use route-level skeleton screens built from `components/ui/Skeleton.tsx` so primary panels load with stable layout blocks instead of ad-hoc spinners. For detailed guidelines and implementation patterns on all UI states (Default, Error, Disabled, and Loading), see [docs/component-states.md](docs/component-states.md). For a complete catalog of which Lucide icon and copy go with each empty state across the app, see [docs/EMPTY_STATE_ILLUSTRATIONS.md](docs/EMPTY_STATE_ILLUSTRATIONS.md).
 
 ## Performance Budgets
 
@@ -61,7 +61,7 @@ PII scrubbing is applied before events leave the app:
 
 Keep the auth token out of the repo and store it only in CI secrets.
 
-For more details on tracking, cookies, and telemetry configuration, see the [Tracking and Opt-Out Guide](docs/tracking-and-opt-out.md).
+For more details on tracking, cookies, and telemetry configuration, see the [Tracking and Opt-Out Guide](docs/tracking-and-opt-out.md). For a full inventory of every first-party cookie (name, `HttpOnly`, `SameSite`, `Secure`, and where each is written), see [docs/COOKIE_HANDLING.md](docs/COOKIE_HANDLING.md).
 
 ## Getting Started
 
