@@ -107,6 +107,7 @@ The **focus state** guarantees accessibility (WCAG compliance) for keyboard user
 - **Focus Ring**: Always apply `focus:outline-none focus:ring-2 focus:ring-brand.red focus:ring-offset-2 focus:ring-offset-black`.
 - **Border Integration**: Clear border contrast when focused (`focus:border-transparent`).
 - **Accessibility**: Never remove outline without providing a visible focus ring replacement.
+- For the full focus management reference — focus-visible styles, hooks, traps, and testing patterns — see [Accessible Focus Baseline](ACCESSIBLE_FOCUS_BASELINE.md).
 
 ### Concrete Example: Accessible Interactive Element
 ```tsx
