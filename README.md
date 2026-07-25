@@ -2,7 +2,7 @@
 
 Frontend application for the RemitWise remittance and financial planning platform.
 
-> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations. When building UI, follow the [component lifecycle](docs/COMPONENT_LIFECYCLE.md) from Figma and design tokens through stories, tests, and production. For conventions around route naming, layouts, and nested routes, see [docs/ROUTING_PATTERNS.md](docs/ROUTING_PATTERNS.md). Then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers.
+> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers. For data fetching and caching patterns, see [docs/CACHE_STRATEGY.md](docs/CACHE_STRATEGY.md).
 
 ## Overview
 
@@ -10,11 +10,13 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 
 - [Prisma data model and durability boundary](./docs/data-model.md)
 - [Elevation and shadow guidance](./docs/ELEVATION.md)
+- [Period lifecycle and state machine](./docs/PERIOD_LIFECYCLE.md)
+- [Internal jargon glossary (contributors)](./docs/GLOSSARY.md)
 
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Utility-first styling
-- **Lucide React** - Icon library
+- **Lucide React** - Icon library — see [docs/ICON_SYSTEM.md](docs/ICON_SYSTEM.md) for usage, sizing, and adding custom icons
 
 ## Features (Placeholders)
 
@@ -205,6 +207,9 @@ To run the Playwright end-to-end tests for authentication and protected routes:
 npm run test:e2e
 ```
 
+For validating responsive breakpoints and layouts across different viewports, see the [Responsive Testing Guide](docs/RESPONSIVE_TESTING.md).
+
+
 ## Project Structure
 
 ```
@@ -228,7 +233,8 @@ remitwise-frontend/
 │   ├── API_ROUTES.md        # API routes documentation
 │   ├── component-states.md  # Standard UI states (default, error, disabled, loading) guide
 │   ├── contract-cache.md    # Contract caching architecture and guidelines
-│   └── frame-budget-rules.md    # Frame budget performance guidelines
+│   ├── frame-budget-rules.md    # Frame budget performance guidelines
+│   └── RESPONSIVE_TESTING.md # Guide to verifying responsive breakpoints and layout behavior
 ├── public/                  # Static assets
 └── package.json
 ```
@@ -242,6 +248,8 @@ See [API Routes Documentation](./docs/API_ROUTES.md) for details on authenticati
 Every route handler under `app/api/` is composed from a small set of reusable decorators (`withAuth`, `validatedRoute`, `withApiErrorHandler`). See [docs/api-route-decorators.md](./docs/api-route-decorators.md) for what each one does and when to use it.
 
 For authenticated browser-side requests, use the shared client API layer documented in [docs/client-api.md](docs/client-api.md). That guide covers when to use `apiClient` instead of raw `fetch`, the `401 -> refresh -> retry once` flow, session-expiry UI surfacing, and logout behavior.
+
+For server-side and third-party requests that need automatic abort on deadline, use the `fetchWithTimeout` wrapper documented in [docs/fetch-timeout.md](docs/fetch-timeout.md). Each endpoint declares its timeout in `lib/config/fetch-timeouts.ts`; the wrapper aborts and throws a `TimeoutError` if the deadline is exceeded. `apiClient` uses the same design for browser requests.
 
 ### Transaction Export
 
