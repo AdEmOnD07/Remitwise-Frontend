@@ -30,6 +30,7 @@ const WalletButton = () => {
       setIsConnecting(true);
       await connect();
       setIsOpen(false);
+      buttonRef.current?.focus();
     } finally {
       setIsConnecting(false);
     }
@@ -39,6 +40,7 @@ const WalletButton = () => {
     await disconnect();
     setIsOpen(false);
     await logout();
+    buttonRef.current?.focus();
   };
 
   return (
