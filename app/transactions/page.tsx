@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -31,7 +31,6 @@ import {
   serializeToJson,
   getExportFilename,
 } from "@/lib/utils/export-serializer";
-import PageHeadingLink from "@/components/PageHeadingLink";
 
 const allTransactions: Transaction[] = [
   {
@@ -400,12 +399,22 @@ export default function TransactionsPage() {
   const exportButtonRef = useRef<HTMLButtonElement>(null);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on click outside (via shared useOnClickOutside hook)
-  const closeExportDropdown = useCallback(() => setIsExportDropdownOpen(false), []);
-  useOnClickOutside(exportDropdownRef, closeExportDropdown, {
-    enabled: isExportDropdownOpen,
-    ignoreRef: exportButtonRef,
-  });
+  // Close dropdown on click outside or escape key
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (exportButtonRef.current?.contains(target)) return;
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(target)) {
+        setIsExportDropdownOpen(false);
+      }
+    };
+    if (isExportDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isExportDropdownOpen]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -485,7 +494,6 @@ export default function TransactionsPage() {
                 type="button"
                 onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
                 disabled={filteredTransactions.length === 0}
-                data-testid={CTA_TEST_IDS.page.transactionsPrimary}
                 aria-expanded={isExportDropdownOpen}
                 aria-haspopup="true"
                 aria-label="Export filtered transactions"
