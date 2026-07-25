@@ -72,32 +72,83 @@ export default function WalletDropdown({
 
   useEffect(() => {
     if (isOpen && dropdownRef.current) {
-      const focusableElements = dropdownRef.current.querySelectorAll(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      const firstElement = focusableElements[0] as HTMLElement;
-      const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+      const getFocusableElements = () => {
+        if (!dropdownRef.current) return [];
+        return Array.from(
+          dropdownRef.current.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'
+          )
+        );
+      };
 
-      const handleTab = (event: KeyboardEvent) => {
-        if (event.key !== 'Tab') return;
-        if (event.shiftKey) {
-          if (document.activeElement === firstElement) {
-            event.preventDefault();
-            lastElement?.focus();
+      const handleKeyDown = (event: KeyboardEvent) => {
+        const focusable = getFocusableElements();
+        if (focusable.length === 0) return;
+
+        const firstElement = focusable[0];
+        const lastElement = focusable[focusable.length - 1];
+        const currentIndex = focusable.indexOf(document.activeElement as HTMLElement);
+
+        if (event.key === 'Tab') {
+          if (event.shiftKey) {
+            if (document.activeElement === firstElement) {
+              event.preventDefault();
+              lastElement?.focus();
+            }
+          } else {
+            if (document.activeElement === lastElement) {
+              event.preventDefault();
+              firstElement?.focus();
+            }
           }
-        } else {
-          if (document.activeElement === lastElement) {
+          return;
+        }
+
+        switch (event.key) {
+          case 'ArrowDown': {
             event.preventDefault();
-            firstElement?.focus();
+            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % focusable.length;
+            focusable[nextIndex]?.focus();
+            break;
           }
+          case 'ArrowUp': {
+            event.preventDefault();
+            const prevIndex = currentIndex === -1 ? focusable.length - 1 : (currentIndex - 1 + focusable.length) % focusable.length;
+            focusable[prevIndex]?.focus();
+            break;
+          }
+          case 'PageDown': {
+            event.preventDefault();
+            focusable[focusable.length - 1]?.focus();
+            break;
+          }
+          case 'PageUp': {
+            event.preventDefault();
+            focusable[0]?.focus();
+            break;
+          }
+          case 'Enter': {
+            if (currentIndex !== -1) {
+              event.preventDefault();
+              focusable[currentIndex].click();
+            }
+            break;
+          }
+          default:
+            break;
         }
       };
 
-      document.addEventListener('keydown', handleTab);
-      firstElement?.focus();
+      document.addEventListener('keydown', handleKeyDown);
+
+      // Focus first element on open
+      const focusable = getFocusableElements();
+      if (focusable.length > 0) {
+        focusable[0].focus();
+      }
 
       return () => {
-        document.removeEventListener('keydown', handleTab);
+        document.removeEventListener('keydown', handleKeyDown);
       };
     }
   }, [isOpen]);
