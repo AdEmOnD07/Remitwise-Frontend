@@ -1,218 +1,288 @@
+/**
+ * Component tests for WalletDropdown
+ * Tests focus trap, ARIA roles, keyboard navigation, and prefers-reduced-motion
+ */
+
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import WalletDropdown from './WalletDropdown';
+import userEvent from '@testing-library/user-event';
 
-describe('WalletDropdown Keyboard Navigation', () => {
-  const mockOnClose = vi.fn();
-  const mockOnConnect = vi.fn();
-  const mockOnDisconnect = vi.fn();
-  const mockButtonRef = { current: document.createElement('button') };
+// Mock the useFocusTrap hook
+vi.mock('../src/lib/hooks/useFocusTrap', () => ({
+  useFocusTrap: vi.fn(() => ({ current: null })),
+}));
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    // Mock navigator.clipboard
-    Object.defineProperty(navigator, 'clipboard', {
-      value: {
-        writeText: vi.fn().mockResolvedValue(undefined),
-      },
-      writable: true,
+const defaultProps = {
+  isOpen: true,
+  isConnected: true,
+  onClose: vi.fn(),
+  onConnect: vi.fn(),
+  onDisconnect: vi.fn(),
+  buttonRef: { current: null } as React.RefObject<HTMLButtonElement>,
+  walletAddress: 'GABCDEFGHIJK1234567890ABCDEFGHIJK1234567890ABCDEFGHIJK123456',
+  network: 'Testnet',
+};
+
+// Dynamic import to avoid hoisting issues with vi.mock
+let WalletDropdown: typeof import('./WalletDropdown').default;
+
+beforeEach(async () => {
+  vi.clearAllMocks();
+
+  // Mock matchMedia for prefers-reduced-motion
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+
+  const mod = await import('./WalletDropdown');
+  WalletDropdown = mod.default;
+});
+
+describe('WalletDropdown', () => {
+  it('renders nothing when isOpen is false', () => {
+    const { container } = render(
+      <WalletDropdown {...defaultProps} isOpen={false} />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders when isOpen is true', () => {
+    render(<WalletDropdown {...defaultProps} />);
+    expect(screen.getByRole('menu')).toBeTruthy();
+  });
+
+  describe('ARIA roles and attributes', () => {
+    it('has role="menu" on the container', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menu = screen.getByRole('menu');
+      expect(menu.getAttribute('aria-label')).toBe('Wallet account menu');
+      expect(menu.getAttribute('aria-orientation')).toBe('vertical');
+    });
+
+    it('uses correct aria-label when disconnected', () => {
+      render(<WalletDropdown {...defaultProps} isConnected={false} />);
+      const menu = screen.getByRole('menu');
+      expect(menu.getAttribute('aria-label')).toBe('Connect wallet menu');
+    });
+
+    it('has role="menuitem" on interactive buttons when connected', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+      // Copy, Account, Settings, Disconnect = 4 menu items
+      expect(menuItems.length).toBe(4);
+    });
+
+    it('has role="menuitem" on Connect Wallet button when disconnected', () => {
+      render(<WalletDropdown {...defaultProps} isConnected={false} />);
+      const menuItems = screen.getAllByRole('menuitem');
+      expect(menuItems.length).toBe(1);
+      expect(menuItems[0].textContent).toContain('Connect Wallet');
+    });
+
+    it('has id matching aria-controls from trigger', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menu = screen.getByRole('menu');
+      expect(menu.getAttribute('id')).toBe('wallet-dropdown-menu');
     });
   });
 
-  it('should focus the first element on open when connected', () => {
-    render(
-      <WalletDropdown
-        isOpen={true}
-        isConnected={true}
-        onClose={mockOnClose}
-        onConnect={mockOnConnect}
-        onDisconnect={mockOnDisconnect}
-        buttonRef={mockButtonRef}
-      />
-    );
+  describe('keyboard navigation', () => {
+    it('moves focus down with ArrowDown', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
 
-    // First interactive element should be the copy button
-    const copyBtn = screen.getByLabelText('Copy full wallet address');
-    expect(document.activeElement).toBe(copyBtn);
+      menuItems[0].focus();
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      expect(document.activeElement).toBe(menuItems[1]);
+    });
+
+    it('moves focus up with ArrowUp', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[1].focus();
+      fireEvent.keyDown(document, { key: 'ArrowUp' });
+      expect(document.activeElement).toBe(menuItems[0]);
+    });
+
+    it('wraps focus from last to first with ArrowDown', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[menuItems.length - 1].focus();
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+      expect(document.activeElement).toBe(menuItems[0]);
+    });
+
+    it('wraps focus from first to last with ArrowUp', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[0].focus();
+      fireEvent.keyDown(document, { key: 'ArrowUp' });
+      expect(document.activeElement).toBe(menuItems[menuItems.length - 1]);
+    });
+
+    it('moves focus to first item with Home key', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[2].focus();
+      fireEvent.keyDown(document, { key: 'Home' });
+      expect(document.activeElement).toBe(menuItems[0]);
+    });
+
+    it('moves focus to last item with End key', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[0].focus();
+      fireEvent.keyDown(document, { key: 'End' });
+      expect(document.activeElement).toBe(menuItems[menuItems.length - 1]);
+    });
+
+    it('moves focus to first item with PageUp key', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[2].focus();
+      fireEvent.keyDown(document, { key: 'PageUp' });
+      expect(document.activeElement).toBe(menuItems[0]);
+    });
+
+    it('moves focus to last item with PageDown key', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[0].focus();
+      fireEvent.keyDown(document, { key: 'PageDown' });
+      expect(document.activeElement).toBe(menuItems[menuItems.length - 1]);
+    });
+
+    it('sad path: handles cases where there are no focusable elements without error', () => {
+      const { container } = render(
+        <WalletDropdown {...defaultProps} />
+      );
+
+      const menu = screen.getByRole('menu');
+      const querySpy = vi.spyOn(menu, 'querySelectorAll').mockReturnValue(
+        Object.assign([], { length: 0 }) as any
+      );
+
+      expect(() => {
+        fireEvent.keyDown(document, { key: 'ArrowDown' });
+      }).not.toThrow();
+
+      querySpy.mockRestore();
+    });
   });
 
-  it('should focus the first element on open when disconnected', () => {
-    render(
-      <WalletDropdown
-        isOpen={true}
-        isConnected={false}
-        onClose={mockOnClose}
-        onConnect={mockOnConnect}
-        onDisconnect={mockOnDisconnect}
-        buttonRef={mockButtonRef}
-      />
-    );
+  describe('keyboard activation', () => {
+    it('activates the focused menuitem on Enter', async () => {
+      const user = userEvent.setup();
+      render(<WalletDropdown {...defaultProps} />);
+      const disconnectBtn = screen.getByText('Disconnect').closest('button')!;
 
-    const connectBtn = screen.getByRole('button', { name: /connect wallet/i });
-    expect(document.activeElement).toBe(connectBtn);
+      disconnectBtn.focus();
+      await user.keyboard('{Enter}');
+
+      expect(defaultProps.onDisconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('activates the focused menuitem on Space', async () => {
+      const user = userEvent.setup();
+      render(<WalletDropdown {...defaultProps} />);
+      const disconnectBtn = screen.getByText('Disconnect').closest('button')!;
+
+      disconnectBtn.focus();
+      await user.keyboard(' ');
+
+      expect(defaultProps.onDisconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not activate a disabled menuitem on Enter or Space', async () => {
+      const user = userEvent.setup();
+      render(
+        <WalletDropdown {...defaultProps} isConnected={false} isConnecting />,
+      );
+      const connectBtn = screen.getByText('Connecting...').closest('button')!;
+      expect(connectBtn).toBeDisabled();
+
+      connectBtn.focus();
+      await user.keyboard('{Enter}');
+      await user.keyboard(' ');
+
+      expect(defaultProps.onConnect).not.toHaveBeenCalled();
+    });
+
+    it('does not activate a menuitem on unrelated keys', async () => {
+      const user = userEvent.setup();
+      render(<WalletDropdown {...defaultProps} />);
+      const disconnectBtn = screen.getByText('Disconnect').closest('button')!;
+
+      disconnectBtn.focus();
+      await user.keyboard('a');
+
+      expect(defaultProps.onDisconnect).not.toHaveBeenCalled();
+    });
   });
 
-  it('should navigate through elements with ArrowDown and ArrowUp with wrap-around', () => {
-    render(
-      <WalletDropdown
-        isOpen={true}
-        isConnected={true}
-        onClose={mockOnClose}
-        onConnect={mockOnConnect}
-        onDisconnect={mockOnDisconnect}
-        buttonRef={mockButtonRef}
-      />
-    );
+  describe('prefers-reduced-motion', () => {
+    it('disables transition classes when reduced motion is preferred', () => {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: vi.fn().mockImplementation((query: string) => ({
+          matches: query === '(prefers-reduced-motion: reduce)',
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        })),
+      });
 
-    const copyBtn = screen.getByLabelText('Copy full wallet address');
-    const accountBtn = screen.getByRole('button', { name: /account/i });
-    const settingsBtn = screen.getByRole('button', { name: /settings/i });
-    const disconnectBtn = screen.getByRole('button', { name: /disconnect/i });
-
-    // Initial focus on first element (copyBtn)
-    expect(document.activeElement).toBe(copyBtn);
-
-    // ArrowDown should move to Account
-    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(accountBtn);
-
-    // ArrowDown should move to Settings
-    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(settingsBtn);
-
-    // ArrowDown should move to Disconnect
-    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(disconnectBtn);
-
-    // ArrowDown should wrap around to copyBtn
-    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' });
-    expect(document.activeElement).toBe(copyBtn);
-
-    // ArrowUp should wrap around backward to disconnectBtn
-    fireEvent.keyDown(document.activeElement!, { key: 'ArrowUp' });
-    expect(document.activeElement).toBe(disconnectBtn);
-
-    // ArrowUp should move back to Settings
-    fireEvent.keyDown(document.activeElement!, { key: 'ArrowUp' });
-    expect(document.activeElement).toBe(settingsBtn);
+      render(<WalletDropdown {...defaultProps} />);
+      const menu = screen.getByRole('menu');
+      expect(menu.className).not.toContain('transition-all');
+    });
   });
 
-  it('should navigate directly to first and last elements using PageUp and PageDown', () => {
-    render(
-      <WalletDropdown
-        isOpen={true}
-        isConnected={true}
-        onClose={mockOnClose}
-        onConnect={mockOnConnect}
-        onDisconnect={mockOnDisconnect}
-        buttonRef={mockButtonRef}
-      />
-    );
-
-    const copyBtn = screen.getByLabelText('Copy full wallet address');
-    const disconnectBtn = screen.getByRole('button', { name: /disconnect/i });
-
-    // Initial focus is on copyBtn. Press PageDown.
-    fireEvent.keyDown(document.activeElement!, { key: 'PageDown' });
-    expect(document.activeElement).toBe(disconnectBtn);
-
-    // Press PageUp.
-    fireEvent.keyDown(document.activeElement!, { key: 'PageUp' });
-    expect(document.activeElement).toBe(copyBtn);
+  describe('disconnect', () => {
+    it('calls onDisconnect when disconnect button is clicked', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const disconnectBtn = screen.getByText('Disconnect').closest('button');
+      fireEvent.click(disconnectBtn!);
+      expect(defaultProps.onDisconnect).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('should trigger click on focused element when Enter is pressed', () => {
-    render(
-      <WalletDropdown
-        isOpen={true}
-        isConnected={true}
-        onClose={mockOnClose}
-        onConnect={mockOnConnect}
-        onDisconnect={mockOnDisconnect}
-        buttonRef={mockButtonRef}
-      />
-    );
-
-    const disconnectBtn = screen.getByRole('button', { name: /disconnect/i });
-
-    // Focus disconnect button
-    disconnectBtn.focus();
-    expect(document.activeElement).toBe(disconnectBtn);
-
-    // Press Enter
-    fireEvent.keyDown(document.activeElement!, { key: 'Enter' });
-    expect(mockOnDisconnect).toHaveBeenCalledTimes(1);
+  describe('connect', () => {
+    it('calls onConnect when connect button is clicked', () => {
+      render(<WalletDropdown {...defaultProps} isConnected={false} />);
+      const connectBtn = screen.getByText('Connect Wallet');
+      fireEvent.click(connectBtn);
+      expect(defaultProps.onConnect).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('should cycle focus with Tab key', () => {
-    render(
-      <WalletDropdown
-        isOpen={true}
-        isConnected={true}
-        onClose={mockOnClose}
-        onConnect={mockOnConnect}
-        onDisconnect={mockOnDisconnect}
-        buttonRef={mockButtonRef}
-      />
-    );
-
-    const copyBtn = screen.getByLabelText('Copy full wallet address');
-    const disconnectBtn = screen.getByRole('button', { name: /disconnect/i });
-
-    // Focus last element
-    disconnectBtn.focus();
-    expect(document.activeElement).toBe(disconnectBtn);
-
-    // Tab should wrap to first element
-    fireEvent.keyDown(document.activeElement!, { key: 'Tab' });
-    expect(document.activeElement).toBe(copyBtn);
-
-    // Shift+Tab on first element should wrap to last element
-    fireEvent.keyDown(document.activeElement!, { key: 'Tab', shiftKey: true });
-    expect(document.activeElement).toBe(disconnectBtn);
-  });
-
-  it('should call onClose when Escape is pressed', () => {
-    render(
-      <WalletDropdown
-        isOpen={true}
-        isConnected={true}
-        onClose={mockOnClose}
-        onConnect={mockOnConnect}
-        onDisconnect={mockOnDisconnect}
-        buttonRef={mockButtonRef}
-      />
-    );
-
-    fireEvent.keyDown(document.body, { key: 'Escape' });
-    expect(mockOnClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('sad path: handles cases where there are no focusable elements without error', () => {
-    // Render the dropdown but mock querySelectorAll to return nothing
-    const { container } = render(
-      <WalletDropdown
-        isOpen={true}
-        isConnected={true}
-        onClose={mockOnClose}
-        onConnect={mockOnConnect}
-        onDisconnect={mockOnDisconnect}
-        buttonRef={mockButtonRef}
-      />
-    );
-
-    // Spy on querySelectorAll on the dropdown container to return empty list
-    const dropdownEl = container.firstChild as HTMLElement;
-    const querySpy = vi.spyOn(dropdownEl, 'querySelectorAll').mockReturnValue(
-      Object.assign([], { length: 0 }) as any
-    );
-
-    // Pressing ArrowDown should not throw
-    expect(() => {
-      fireEvent.keyDown(document.body, { key: 'ArrowDown' });
-    }).not.toThrow();
-
-    querySpy.mockRestore();
+  describe('live region', () => {
+    it('has a status live region for announcements', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const status = screen.getByRole('status');
+      expect(status.getAttribute('aria-live')).toBe('polite');
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { validateSpendingLimit } from './family-limits';
+import { validateSpendingLimit } from '@/lib/validation/family-limits';
 
 describe('validateSpendingLimit', () => {
   it('should return isValid: true for valid positive numbers', () => {

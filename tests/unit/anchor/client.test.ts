@@ -246,7 +246,7 @@ describe('AnchorClient', () => {
 
     describe('timeout enforcement', () => {
         it('enforces DEFAULT_TIMEOUT_MS via AbortController', async () => {
-            fetchSpy.mockImplementationOnce((_url, options) => {
+            fetchSpy.mockImplementationOnce((_url: unknown, options?: RequestInit) => {
                 const signal = (options as RequestInit).signal as AbortSignal;
                 return new Promise((_resolve, reject) => {
                     signal?.addEventListener('abort', () => {

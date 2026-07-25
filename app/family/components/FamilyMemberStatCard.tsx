@@ -1,6 +1,8 @@
+"use client";
+
 import React, { useState } from "react";
-import { Copy, Check, Eye, Edit2, User, Send, ShieldCheck, Save, X } from "lucide-react";
-import { validateSpendingLimit } from "@/lib/validation/family-limits";
+import { Copy, Check, Eye, Edit2, User, Send, ShieldCheck } from "lucide-react";
+import { useClientTranslator } from "@/lib/i18n/client";
 
 export type FamilyMemberRole = "Recipient" | "Sender" | "Admin";
 
@@ -17,6 +19,7 @@ export interface FamilyMember {
 
 interface FamilyMemberStatCardProps {
 	member: FamilyMember;
+	onViewDetails?: () => void;
 }
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
@@ -27,11 +30,10 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 
 const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 	member,
+	onViewDetails,
 }) => {
+	const { t } = useClientTranslator();
 	const [copied, setCopied] = useState(false);
-	const [isEditing, setIsEditing] = useState(false);
-	const [newLimit, setNewLimit] = useState(member.spendingLimit);
-	const [error, setError] = useState<string | null>(null);
 
 	const getRoleMeta = (role: FamilyMemberRole) => {
 		switch (role) {
@@ -62,35 +64,35 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 	const getUsageMeta = (usedPercentage: number) => {
 		if (usedPercentage >= 100) {
 			return {
-				label: "Over limit",
+				label: t("family_member_card.usage_status.over_limit"),
 				textClass: "text-status-error-fg",
 				badgeClass: "border-status-error-border bg-status-error-bg text-status-error-fg",
 				barClass: "bg-status-error-fg",
 				panelBorderClass: "border-status-error-border",
-				helper: "Exceeded monthly limit.",
+				helper: t("family_member_card.usage_status.over_limit_helper"),
 			};
 		}
 
 		if (usedPercentage >= 75) {
 			return {
-				label: "Near limit",
+				label: t("family_member_card.usage_status.near_limit"),
 				textClass: "text-status-warning-fg",
 				badgeClass: "border-status-warning-border bg-status-warning-bg text-status-warning-fg",
 				barClass: "bg-status-warning-fg",
 				panelBorderClass: "border-status-warning-border",
-				helper: "Approaching spending cap.",
+				helper: t("family_member_card.usage_status.near_limit_helper"),
 			};
 		}
 
 		return {
-			label: "On track",
+			label: t("family_member_card.usage_status.on_track"),
 			textClass: "text-status-success-fg",
 			badgeClass: "border-status-success-border bg-status-success-bg text-status-success-fg",
 			barClass: "bg-status-success-fg",
 			panelBorderClass: "border-white/[0.08]",
 			helper: usedPercentage > 0
-				? "Usage is within range."
-				: "No spending recorded yet.",
+				? t("family_member_card.usage_status.within_range_helper")
+				: t("family_member_card.usage_status.no_usage_helper"),
 		};
 	};
 
@@ -107,17 +109,6 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 		} catch (err) {
 			console.error("Failed to copy text: ", err);
 		}
-	};
-
-	const handleSaveLimit = () => {
-		const validation = validateSpendingLimit(newLimit);
-		if (!validation.isValid) {
-			setError(validation.error || 'Invalid limit');
-			return;
-		}
-		setError(null);
-		setIsEditing(false);
-		// TODO: Call contract update function here
 	};
 
 	const roleMeta = getRoleMeta(member.role);
@@ -145,7 +136,7 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 							<span
 								className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${roleMeta.className}`}>
 								{roleMeta.icon}
-								{member.role}
+								{t(`family_member_card.roles.${member.role.toLowerCase()}`)}
 							</span>
 							<span
 								className={`rounded-full border px-3 py-1 text-xs font-medium ${usageMeta.badgeClass}`}>
@@ -153,21 +144,22 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 							</span>
 						</div>
 						<p className='text-sm leading-6 text-gray-300'>
-							Monthly wallet usage, remaining headroom, and permissions in
-							one place.
+							{t("family_member_card.description")}
 						</p>
 					</div>
 				</div>
 
 				<div className='rounded-2xl border border-white/10 bg-black/25 p-4 sm:min-w-[168px]'>
 					<p className='text-xs font-semibold uppercase tracking-[0.18em] text-gray-500'>
-						Used this month
+						{t("family_member_card.used_this_month_label")}
 					</p>
 					<p className='mt-3 text-3xl font-semibold tracking-tight text-white'>
 						{currencyFormatter.format(member.used)}
 					</p>
 					<p className='mt-2 text-sm text-gray-400'>
-						{member.usedPercentage}% of monthly limit
+						{t("family_member_card.used_percentage", {
+							percentage: member.usedPercentage
+						})}
 					</p>
 				</div>
 			</div>
@@ -176,7 +168,7 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 				<div className='flex items-start justify-between gap-3'>
 					<div className='min-w-0'>
 						<p className='text-xs font-semibold uppercase tracking-[0.18em] text-gray-500'>
-							Stellar address
+							{t("family_member_card.stellar_address_label")}
 						</p>
 						<p className='mt-2 break-all font-mono text-sm text-gray-200'>
 							{formatStellarId(member.stellarId)}
@@ -186,8 +178,10 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 						type='button'
 						onClick={handleCopy}
 						className='grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.03] text-gray-300 transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0d0d]'
-						title='Copy Stellar ID'
-						aria-label={`Copy Stellar ID for ${member.name}`}>
+						title={t("family_member_card.copy_stellar_title")}
+						aria-label={t("family_member_card.copy_stellar_aria", {
+							name: member.name
+						})}>
 						{copied ? (
 							<Check className='h-4 w-4 text-emerald-400' />
 						) : (
@@ -200,25 +194,15 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 			<div className='mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3'>
 				<div className='rounded-2xl border border-white/[0.08] bg-black/25 p-4'>
 					<p className='text-xs font-semibold uppercase tracking-[0.18em] text-gray-500'>
-						Spending limit
+						{t("family_member_card.spending_limit_label")}
 					</p>
-					{isEditing ? (
-						<input
-							type="number"
-							value={newLimit}
-							onChange={(e) => setNewLimit(parseFloat(e.target.value))}
-							className="mt-2 w-full rounded-lg border border-white/10 bg-[#1a1a1a] px-2 py-1 text-white focus:border-red-500 focus:outline-none"
-						/>
-					) : (
-						<p className='mt-3 text-lg font-semibold text-white'>
-							{currencyFormatter.format(member.spendingLimit)}
-						</p>
-					)}
-					{error && <p className="mt-1 text-xs text-status-error-fg">{error}</p>}
+					<p className='mt-3 text-lg font-semibold text-white'>
+						{currencyFormatter.format(member.spendingLimit)}
+					</p>
 				</div>
 				<div className='rounded-2xl border border-white/[0.08] bg-black/25 p-4'>
 					<p className='text-xs font-semibold uppercase tracking-[0.18em] text-gray-500'>
-						Spent
+						{t("family_member_card.spent_label")}
 					</p>
 					<p className='mt-3 text-lg font-semibold text-white'>
 						{currencyFormatter.format(member.used)}
@@ -226,7 +210,7 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 				</div>
 				<div className='rounded-2xl border border-white/[0.08] bg-black/25 p-4'>
 					<p className='text-xs font-semibold uppercase tracking-[0.18em] text-gray-500'>
-						Remaining
+						{t("family_member_card.remaining_label")}
 					</p>
 					<p className={`mt-3 text-lg font-semibold ${remaining < 0 ? "text-status-error-fg" : "text-white"}`}>
 						{currencyFormatter.format(remaining)}
@@ -236,7 +220,9 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 
 			<div className={`mt-4 rounded-2xl border bg-black/25 p-4 ${usageMeta.panelBorderClass}`}>
 				<div className='flex flex-wrap items-center justify-between gap-2'>
-					<p className='text-sm font-medium text-white'>Utilization</p>
+					<p className='text-sm font-medium text-white'>
+						{t("family_member_card.utilization_label")}
+					</p>
 					<p className={`text-sm ${usageMeta.textClass}`}>{usageMeta.helper}</p>
 				</div>
 
@@ -256,34 +242,18 @@ const FamilyMemberStatCard: React.FC<FamilyMemberStatCardProps> = ({
 			<div className='mt-6 flex flex-col gap-3 sm:flex-row'>
 				<button
 					type='button'
+					onClick={onViewDetails}
 					className='flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-white/[0.08]'>
 					<Eye className='h-3.5 w-3.5' />
-					View Details
+					{t("family_member_card.view_details")}
 				</button>
-				{isEditing ? (
-					<>
-						<button
-							onClick={handleSaveLimit}
-							className='flex flex-1 items-center justify-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-100 transition-colors hover:bg-emerald-500/20'>
-							<Save className='h-3.5 w-3.5' />
-							Save
-						</button>
-						<button
-							onClick={() => {setIsEditing(false); setError(null);}}
-							className='flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-500/20 bg-gray-500/10 px-4 py-3 text-sm font-medium text-gray-100 transition-colors hover:bg-gray-500/20'>
-							<X className='h-3.5 w-3.5' />
-							Cancel
-						</button>
-					</>
-				) : (
-					<button
-						type='button'
-						onClick={() => setIsEditing(true)}
-						className='flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-50 transition-colors hover:bg-red-500/20'>
-						<Edit2 className='h-3.5 w-3.5' />
-						Edit Limits
-					</button>
-				)}
+				<button
+					type='button'
+					onClick={onViewDetails}
+					className='flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-50 transition-colors hover:bg-red-500/20'>
+					<Edit2 className='h-3.5 w-3.5' />
+					Edit Limits
+				</button>
 			</div>
 		</article>
 	);

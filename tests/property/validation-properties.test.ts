@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
+import { Keypair } from '@stellar/stellar-sdk';
 import {
   validateAmount,
   validateFutureDate,
@@ -111,7 +112,13 @@ describe('Validation Properties - Property-Based Tests', () => {
         fc.string({ minLength: 101, maxLength: 200 }),
         (longName) => {
           const result = validateGoalName(longName);
-          return result.isValid === false && result.error?.includes('100 characters');
+          // Names longer than 100 chars are rejected as "too long"; a string of
+          // only whitespace is rejected earlier as "required" (it trims empty).
+          return (
+            result.isValid === false &&
+            (result.error === 'goal_name_too_long' ||
+              result.error === 'goal_name_required')
+          );
         }
       ),
       { numRuns: 100 }
@@ -190,7 +197,10 @@ describe('Validation Properties - Property-Based Tests', () => {
   it('Property 10: validatePercentages accepts sets that sum to 100', () => {
     fc.assert(
       fc.property(
-        fc.array(fc.double({ min: 0, max: 100, noNaN: true, noDefaultInfinity: true }), { minLength: 4, maxLength: 4 }),
+        // Use a sane lower bound so the array never sums to a sub-normal value;
+        // normalizing denormalized doubles (e.g. 5e-324) is numerically unstable
+        // and would drift outside validatePercentages' 0.01 tolerance.
+        fc.array(fc.double({ min: 0.01, max: 100, noNaN: true, noDefaultInfinity: true }), { minLength: 4, maxLength: 4 }),
         (arr) => {
           const total = arr.reduce((s, v) => s + v, 0);
           const factor = total === 0 ? 0 : 100 / total;
@@ -253,25 +263,22 @@ describe('Validation Properties - Property-Based Tests', () => {
   });
 
   /**
-   * Property 13: validateStellarAddress accepts valid-looking addresses
-   * 
-   * NOTE: This validator uses a regex check (^G[A-Z0-9]{55}$) which is a 
-   * structural check only. It does NOT verify the Base32 checksum or use 
-   * the Stellar StrKey encoding validation (which uses CRC16).
-   * 
-   * Discrepancy: The UI (RecipientAddressInput) uses a stricter validation 
-   * that includes checksum verification. The server-side regex is a 
-   * permissive fallback. The intended source of truth for full validation 
-   * should be the Stellar SDK's StrKey.decodeEd25519PublicKey, but for 
-   * basic property coverage, we verify the regex's invariants.
+   * Property 13: validateStellarAddress accepts genuinely valid addresses
+   *
+   * `validateStellarAddress` performs a structural regex check AND verifies the
+   * StrKey CRC16 checksum via `StrKey.isValidEd25519PublicKey`. A random Base32
+   * string of the right shape will almost never have a valid checksum, so we
+   * generate real keypairs (which are checksum-valid by construction) to assert
+   * that legitimate addresses are accepted.
    */
-  it('Property 13: validateStellarAddress accepts valid-looking addresses', () => {
-    const stellarAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('');
+  it('Property 13: validateStellarAddress accepts genuinely valid addresses', () => {
     fc.assert(
       fc.property(
-        fc.array(fc.constantFrom(...stellarAlphabet), { minLength: 55, maxLength: 55 }),
-        (arr) => {
-          const address = 'G' + arr.join('');
+        // The integer is just a source of entropy to force fresh runs; each run
+        // produces a brand-new, checksum-valid Ed25519 public key.
+        fc.integer(),
+        () => {
+          const address = Keypair.random().publicKey();
           expect(() => validateStellarAddress(address)).not.toThrow();
         }
       ),
@@ -285,7 +292,7 @@ describe('Validation Properties - Property-Based Tests', () => {
         fc.oneof(
           fc.string().filter(s => s.length !== 56), // Wrong length
           fc.string({ minLength: 56, maxLength: 56 }).filter(s => !s.startsWith('G')), // Wrong prefix
-          fc.string({ minLength: 56, maxLength: 56, alphabet: 'abcdefghijklmnopqrstuvwxyz' }), // Lowercase
+          fc.string({ minLength: 56, maxLength: 56, unit: fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz'.split('')) }), // Lowercase
           fc.string({ minLength: 56, maxLength: 56 }).filter(s => /[^A-Z0-9]/.test(s)), // Illegal characters
           fc.constant(''), // Empty
           fc.constant(null as any), // Non-string
@@ -317,7 +324,8 @@ describe('Validation Properties - Property-Based Tests', () => {
           fc.constant({ fn: validateFutureDate, input: '2020-01-01' })
         ),
         (testCase) => {
-          const result = testCase.fn(testCase.input as any);
+          const validate = testCase.fn as (input: unknown) => { isValid: boolean; error?: string };
+          const result = validate(testCase.input);
           return (
             result.isValid === false &&
             typeof result.error === 'string' &&

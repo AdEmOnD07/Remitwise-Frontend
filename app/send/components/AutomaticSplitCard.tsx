@@ -8,9 +8,11 @@ import {
   FileText,
   Shield,
   Info,
+  RefreshCw,
 } from "lucide-react";
-import { useClientLocale } from "@/lib/i18n/client";
+import { useClientLocale, useClientTranslator } from "@/lib/i18n/client";
 import { formatCurrency } from "@/lib/utils/format-currency";
+import { useExchangeRates } from "@/lib/context/RatesContext";
 
 interface SplitCategoryProps {
   icon: React.ElementType;
@@ -60,9 +62,12 @@ interface AutomaticSplitCardProps {
 
 export default function AutomaticSplitCard({ amount: externalAmount, currency }: AutomaticSplitCardProps) {
   const locale = useClientLocale();
+  const { t } = useClientTranslator();
+  const { loading, stale, error: ratesError, refresh } = useExchangeRates();
+
   const resolvedCurrency = currency ?? "USD";
   const [internalAmount, setInternalAmount] = useState<string>("");
-  
+
   const total = externalAmount !== undefined ? externalAmount : (parseFloat(internalAmount) || 0);
 
   const categories = [
@@ -78,9 +83,7 @@ export default function AutomaticSplitCard({ amount: externalAmount, currency }:
     <div className="space-y-3 max-w-sm mx-auto font-sans">
       {/* Main Split Card */}
       <div className="relative overflow-hidden bg-[#0c0c0c] rounded-3xl p-6 border border-white/5 shadow-2xl">
-        {/* Red atmospheric glow — top-right corner */}
         <div className="absolute top-0 right-0 w-[320px] h-[320px] bg-red-900/25 blur-[110px] rounded-full -mr-32 -mt-32 pointer-events-none" />
-        {/* Subtle secondary glow — bottom-left */}
         <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-red-800/10 blur-[90px] rounded-full -ml-20 -mb-20 pointer-events-none" />
 
         <div className="relative z-10">
@@ -93,6 +96,23 @@ export default function AutomaticSplitCard({ amount: externalAmount, currency }:
               Automatic Split
             </h2>
           </div>
+
+          {/* Rates status */}
+          {(ratesError || stale) && (
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-amber-400">
+                {ratesError ? t("rates.error") : t("rates.stale")}
+              </p>
+              <button
+                onClick={refresh}
+                className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
+                aria-label={t("rates.refresh")}
+              >
+                <RefreshCw className="w-3 h-3" />
+                {t("rates.refresh")}
+              </button>
+            </div>
+          )}
 
           {/* Description */}
           <p className="text-gray-400 text-sm mb-7 leading-relaxed">
@@ -124,7 +144,11 @@ export default function AutomaticSplitCard({ amount: externalAmount, currency }:
                 Total Amount
               </span>
               <span className="text-white text-3xl font-bold tabular-nums leading-none">
-                {displayTotal}
+                {loading ? (
+                  <span className="text-lg text-gray-500">{t("rates.loading")}</span>
+                ) : (
+                  displayTotal
+                )}
               </span>
             </div>
 
@@ -145,7 +169,6 @@ export default function AutomaticSplitCard({ amount: externalAmount, currency }:
 
       {/* Stellar Info Card */}
       <div className="relative overflow-hidden bg-[#0c0c0c] rounded-2xl px-4 py-4 border border-white/5">
-        {/* Subtle red glow on info card */}
         <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-red-900/15 blur-[70px] rounded-full -mr-10 -mt-10 pointer-events-none" />
 
         <div className="relative z-10 flex items-start gap-3">

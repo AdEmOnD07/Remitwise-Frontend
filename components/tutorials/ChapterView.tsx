@@ -23,6 +23,10 @@ const STORAGE_KEY = (tutorialId: string) =>
 
 const defaultCheckpoints = [false, false, false];
 
+interface TutorialProgress {
+  chapters: Record<string, { checkpoints: boolean[] }>;
+}
+
 export default function ChapterView({
   tutorialId,
   chapterId,
@@ -33,35 +37,84 @@ export default function ChapterView({
   const router = useRouter();
   const [checkpoints, setCheckpoints] = useState<boolean[]>(defaultCheckpoints);
   const [savedChapters, setSavedChapters] = useState<Record<string, { checkpoints: boolean[] }>>({});
+  const [isSyncing, setIsSyncing] = useState(false);
 
+  // Load progress from server first, then fallback to localStorage
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY(tutorialId));
-      const parsed = raw ? JSON.parse(raw) : { chapters: {} };
-      const chapters = parsed?.chapters ?? {};
-      setSavedChapters(chapters);
-      if (chapters[chapterId]?.checkpoints) {
-        setCheckpoints(chapters[chapterId].checkpoints);
-      } else {
-        setCheckpoints(defaultCheckpoints);
+    const loadProgress = async () => {
+      try {
+        const response = await fetch(`/api/v1/tutorials/${tutorialId}/progress`);
+        if (response.ok) {
+          const data: TutorialProgress = await response.json();
+          const chapters = data?.chapters ?? {};
+          setSavedChapters(chapters);
+          if (chapters[chapterId]?.checkpoints) {
+            setCheckpoints(chapters[chapterId].checkpoints);
+          } else {
+            setCheckpoints(defaultCheckpoints);
+          }
+          // Sync to localStorage as backup
+          localStorage.setItem(STORAGE_KEY(tutorialId), JSON.stringify(data));
+        } else {
+          // Fallback to localStorage if server request fails
+          throw new Error("Server request failed");
+        }
+      } catch (e) {
+        // Fallback to localStorage
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY(tutorialId));
+          const parsed = raw ? JSON.parse(raw) : { chapters: {} };
+          const chapters = parsed?.chapters ?? {};
+          setSavedChapters(chapters);
+          if (chapters[chapterId]?.checkpoints) {
+            setCheckpoints(chapters[chapterId].checkpoints);
+          } else {
+            setCheckpoints(defaultCheckpoints);
+          }
+        } catch (localError) {
+          setSavedChapters({});
+          setCheckpoints(defaultCheckpoints);
+        }
       }
-    } catch (e) {
-      setSavedChapters({});
-      setCheckpoints(defaultCheckpoints);
-    }
+    };
+
+    loadProgress();
   }, [tutorialId, chapterId]);
 
+  // Save progress to server and localStorage
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY(tutorialId));
-      const base = raw ? JSON.parse(raw) : { chapters: {} };
-      base.chapters = { ...base.chapters, [chapterId]: { checkpoints } };
-      localStorage.setItem(STORAGE_KEY(tutorialId), JSON.stringify(base));
-      setSavedChapters(base.chapters);
-    } catch (e) {
-      // ignore write errors
-    }
-  }, [checkpoints, tutorialId, chapterId]);
+    const saveProgress = async () => {
+      setIsSyncing(true);
+      try {
+        // Save to localStorage first (immediate)
+        const base = { chapters: { ...savedChapters, [chapterId]: { checkpoints } } };
+        localStorage.setItem(STORAGE_KEY(tutorialId), JSON.stringify(base));
+        setSavedChapters(base.chapters);
+
+        // Then sync to server (async)
+        try {
+          const response = await fetch(`/api/v1/tutorials/${tutorialId}/progress`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(base),
+          });
+          if (response.ok) {
+            const data: TutorialProgress = await response.json();
+            setSavedChapters(data.chapters);
+          }
+        } catch (serverError) {
+          // Server sync failed, but localStorage save succeeded
+          console.error("Failed to sync progress to server:", serverError);
+        }
+      } catch (e) {
+        // ignore write errors
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    saveProgress();
+  }, [checkpoints, tutorialId, chapterId, savedChapters]);
 
   const chapterStates = useMemo(() => {
     return Array.from({ length: chaptersCount }, (_, index) => {
@@ -105,15 +158,6 @@ export default function ChapterView({
   const markComplete = () => {
     const complete = Array(checkpoints.length).fill(true);
     setCheckpoints(complete);
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY(tutorialId));
-      const base = raw ? JSON.parse(raw) : { chapters: {} };
-      base.chapters = { ...base.chapters, [chapterId]: { checkpoints: complete } };
-      localStorage.setItem(STORAGE_KEY(tutorialId), JSON.stringify(base));
-      setSavedChapters(base.chapters);
-    } catch (e) {
-      // ignore write errors
-    }
   };
 
   const handleChapterSelect = (index: number) => {
@@ -150,22 +194,22 @@ export default function ChapterView({
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.3fr_0.9fr]">
-      <div className="space-y-6">
-        <section className="rounded-3xl bg-bg2 border border-border p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+    <div className="grid min-w-0 gap-6 375:gap-7 laptop:gap-8 lg:grid-cols-[1.3fr_0.9fr]">
+      <div className="min-w-0 space-y-5 375:space-y-6">
+        <section className="min-w-0 rounded-3xl bg-bg2 border border-border p-5 375:p-6">
+          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-muted">
                 Tutorial progress
               </p>
-              <h2 className="mt-2 text-3xl font-bold text-foreground">
+              <h2 className="mt-2 min-w-0 break-words text-xl 375:text-2xl tablet:text-3xl font-bold leading-tight text-foreground">
                 {chapterTitle}
               </h2>
               <p className="text-sm text-muted mt-1">
                 Chapter {chapterIndex + 1} of {chaptersCount}
               </p>
             </div>
-            <div className="inline-flex items-center rounded-full bg-brand-red/10 px-3 py-2 text-sm font-semibold text-brand-red">
+            <div className="inline-flex w-fit items-center rounded-full bg-brand-red/10 px-3 py-2 text-sm font-semibold text-brand-red">
               {tutorialProgress}% complete
             </div>
           </div>
@@ -181,13 +225,13 @@ export default function ChapterView({
           </p>
         </section>
 
-        <section className="rounded-3xl bg-bg2 border border-border p-6">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <div>
+        <section className="min-w-0 rounded-3xl bg-bg2 border border-border p-5 375:p-6">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3 375:gap-4">
+            <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground">Chapter checkpoints</p>
               <p className="text-sm text-muted">Mark each step complete as you progress.</p>
             </div>
-            <span className="text-sm font-semibold text-muted">
+            <span className="shrink-0 text-sm font-semibold text-muted">
               {chapterCompletionPercent}%
             </span>
           </div>
@@ -198,18 +242,18 @@ export default function ChapterView({
                 key={i}
                 type="button"
                 onClick={() => toggleCheckpoint(i)}
-                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-4 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] ${
+                className={`flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border px-4 py-4 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] touch-target-wide ${
                   done ? "border-brand-red/20 bg-surface" : "border-border bg-bg3 hover:border-white/20"
                 }`}
                 aria-pressed={done}
               >
-                <div>
+                <div className="min-w-0">
                   <p className="text-base font-semibold text-foreground">
                     Checkpoint {i + 1}
                   </p>
                   <p className="text-sm text-muted">Complete the step to unlock progress.</p>
                 </div>
-                <span className={`text-sm font-semibold ${done ? "text-brand-red" : "text-muted"}`}>
+                <span className={`shrink-0 text-sm font-semibold ${done ? "text-brand-red" : "text-muted"}`}>
                   {done ? "Done" : "Open"}
                 </span>
               </button>
@@ -222,7 +266,7 @@ export default function ChapterView({
             type="button"
             onClick={onPrevious}
             disabled={chapterIndex === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-bg3 px-4 py-3 text-sm font-semibold text-foreground transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="touch-target-wide inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-bg3 px-4 py-3 text-sm font-semibold text-foreground transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ChevronLeft className="w-4 h-4" />
             Previous
@@ -231,7 +275,7 @@ export default function ChapterView({
           <button
             type="button"
             onClick={onResume}
-            className="inline-flex items-center justify-center rounded-lg border border-brand-red bg-transparent px-4 py-3 text-sm font-semibold text-brand-red transition hover:bg-brand-red/10"
+            className="touch-target-wide inline-flex items-center justify-center rounded-lg border border-brand-red bg-transparent px-4 py-3 text-sm font-semibold text-brand-red transition hover:bg-brand-red/10"
           >
             Resume
           </button>
@@ -239,7 +283,7 @@ export default function ChapterView({
           <button
             type="button"
             onClick={onNext}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-red px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-brand-redHover disabled:cursor-not-allowed disabled:opacity-50"
+            className="touch-target-wide inline-flex items-center justify-center gap-2 rounded-lg bg-brand-red px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-brand-redHover disabled:cursor-not-allowed disabled:opacity-50"
           >
             Next
             <ChevronRight className="w-4 h-4" />
@@ -247,13 +291,13 @@ export default function ChapterView({
         </div>
       </div>
 
-      <aside className="rounded-3xl bg-bg2 border border-border p-6">
-        <div className="flex items-center justify-between gap-4 mb-5">
-          <div>
+      <aside className="min-w-0 rounded-3xl bg-bg2 border border-border p-5 375:p-6">
+        <div className="mb-5 flex flex-wrap items-start justify-between gap-3 375:gap-4">
+          <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">Chapter navigation</p>
             <p className="text-sm text-muted">See which chapters are complete, current, or locked.</p>
           </div>
-          <span className="text-sm font-semibold text-muted">
+          <span className="shrink-0 text-sm font-semibold text-muted">
             {chapterIndex + 1}/{chaptersCount}
           </span>
         </div>
@@ -269,7 +313,7 @@ export default function ChapterView({
                 onClick={() => handleChapterSelect(Number(chapter.id))}
                 disabled={isLocked}
                 aria-current={isCurrent ? "step" : undefined}
-                className={`w-full flex items-center justify-between gap-3 rounded-2xl border px-4 py-4 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] ${
+                className={`flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border px-4 py-4 text-left transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0a] touch-target-wide ${
                   isCurrent
                     ? "border-brand-red bg-surface"
                     : isLocked
@@ -277,16 +321,16 @@ export default function ChapterView({
                     : "border-border bg-bg3 hover:border-white/20"
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-[#111111] text-sm font-semibold text-foreground">
                     {Number(chapter.id) + 1}
                   </span>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{chapter.title}</p>
-                    <p className="text-xs text-muted">{chapter.description}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">{chapter.title}</p>
+                    <p className="truncate text-xs text-muted">{chapter.description}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {chapter.status === "completed" ? (
                     <CheckCircle2 className="w-4 h-4 text-brand-red" />
                   ) : chapter.status === "locked" ? (

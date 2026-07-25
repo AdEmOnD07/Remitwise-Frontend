@@ -4,7 +4,7 @@ const STELLAR_ADDRESS_REGEX = /G[A-Z2-7]{55}/g;
 const AMOUNT_REGEX = /\b\d+(\.\d+)?\s*(XLM|USDC|USD)\b/gi;
 const SESSION_TOKEN_REGEX = /"iron-session[^"]*":\s*"[^"]+"/gi;
 
-function scrubServerPII(event: Sentry.Event): Sentry.Event {
+function scrubServerPII<T extends Sentry.Event>(event: T): T {
   const str = JSON.stringify(event);
   const scrubbed = str
     .replace(STELLAR_ADDRESS_REGEX, "[STELLAR_ADDRESS]")
