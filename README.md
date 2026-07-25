@@ -2,7 +2,7 @@
 
 Frontend application for the RemitWise remittance and financial planning platform.
 
-> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers. For data fetching and caching patterns, see [docs/CACHE_STRATEGY.md](docs/CACHE_STRATEGY.md).
+> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers. For data fetching and caching patterns, see [docs/CACHE_STRATEGY.md](docs/CACHE_STRATEGY.md). For SSR vs. client-only patterns, see [docs/SSR_PATTERNS.md](docs/SSR_PATTERNS.md).
 
 ## Overview
 
@@ -12,6 +12,7 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 - [Elevation and shadow guidance](./docs/ELEVATION.md)
 - [Period lifecycle and state machine](./docs/PERIOD_LIFECYCLE.md)
 - [Internal jargon glossary (contributors)](./docs/GLOSSARY.md)
+- [SSR vs. Client-Only Patterns Guide](./docs/SSR_PATTERNS.md)
 
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety

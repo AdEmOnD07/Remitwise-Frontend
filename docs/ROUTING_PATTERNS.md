@@ -74,3 +74,4 @@ When building nested routes:
 
 - [Architecture Overview](architecture.md)
 - [Component Lifecycle](COMPONENT_LIFECYCLE.md)
+- [SSR & Client Patterns Guide](SSR_PATTERNS.md)
