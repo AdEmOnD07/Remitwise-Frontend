@@ -55,10 +55,17 @@ export function SkeletonGroup({
 }: SkeletonGroupProps) {
   return (
     <div
-      className={`loading-skeleton animate-shimmer ${className}`}
+      role="status"
+      aria-busy="true"
+      aria-label={label}
+      className={className}
       style={style}
       data-loading-state="skeleton"
-    />
+    >
+      {/* Visually-hidden label gives screen readers something to announce. */}
+      <span className="sr-only">{label}</span>
+      {children}
+    </div>
   );
 }
 

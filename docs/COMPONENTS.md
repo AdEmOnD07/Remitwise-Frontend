@@ -4,7 +4,114 @@ For the contributor workflow that takes a component from Figma through design
 tokens, Storybook stories, tests, and production integration, see
 [COMPONENT_LIFECYCLE.md](COMPONENT_LIFECYCLE.md).
 
-## AccessibleCalendarGrid
+## Skeleton / SkeletonGroup
+
+Route-level and widget-level placeholder components used during data loading.
+Purely decorative shapes are hidden from assistive technology; `SkeletonGroup`
+wraps them in a polite live region so screen-reader users receive an
+announcement.
+
+**File:** `components/ui/Skeleton.tsx`
+
+### `<Skeleton>` props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `variant` | `"shimmer" \| "static"` | `"shimmer"` | `shimmer` plays a travelling-highlight animation; `static` is a flat fill that never animates. Both degrade to the static fill under `prefers-reduced-motion: reduce`. |
+| `className` | `string` | — | Extra Tailwind classes (width, height, border-radius). |
+| `style` | `CSSProperties` | — | Inline styles, e.g. `{ height: "40%" }` for proportional bar charts. |
+
+`<Skeleton>` always renders with `aria-hidden="true"` — it is decorative and
+must not be announced directly.
+
+### `<SkeletonGroup>` props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `label` | `string` | `"Loading"` | Announced by screen readers while the placeholder is visible. Use a surface-specific string: `"Loading transaction history"`. |
+| `children` | `ReactNode` | — | One or more `<Skeleton>` shapes (or higher-level skeleton composites). |
+| `className` | `string` | — | Layout classes on the wrapper (`"space-y-4"`, `"grid gap-6"`, etc.). |
+| `style` | `CSSProperties` | — | Inline styles on the wrapper. |
+
+`SkeletonGroup` renders `role="status"` / `aria-busy="true"` and a visually-
+hidden `<span>` containing the label. **Do not nest `SkeletonGroup` inside
+another `SkeletonGroup`** — nesting creates double-announcements.
+
+### Usage
+
+```tsx
+import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
+
+// Minimal — one group per loading surface
+<SkeletonGroup label="Loading transaction history" className="space-y-3">
+  <Skeleton className="h-12 w-full rounded-xl" />
+  <Skeleton className="h-12 w-full rounded-xl" />
+</SkeletonGroup>
+```
+
+### Higher-level composites
+
+| Export | Description |
+|---|---|
+| `<SkeletonCard variant="default\|stat\|chart">` | Single card-shaped placeholder |
+| `<SkeletonList rows={5} variant="table\|cards">` | Multi-row list placeholder |
+| `<SkeletonChart type="bar\|line\|donut">` | Chart-area placeholder |
+| `<SkeletonWidget>` | Generic widget shell |
+| `<DashboardLoadingSkeleton>` | Full dashboard route skeleton (from `components/ui/LoadingSkeletons.tsx`) |
+| `<BillsLoadingSkeleton>` | Bills route skeleton |
+| `<GoalsLoadingSkeleton>` | Goals route skeleton |
+| `<InsightsLoadingSkeleton>` | Insights route skeleton |
+| `<InsightLoadingSkeleton>` | Single-insight route skeleton |
+| `<TransactionHistoryLoadingSkeleton>` | Transaction history route skeleton |
+
+### Theme tokens
+
+All individual `<Skeleton>` shapes draw their colours from CSS custom
+properties so operators can re-skin them without touching source:
+
+| Variable | Light default | Dark default | Role |
+|---|---|---|---|
+| `--skeleton-static` | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.08)` | Flat fill / reduced-motion fallback |
+| `--skeleton-base` | `rgba(0,0,0,0.06)` | `rgba(255,255,255,0.05)` | Base of shimmer gradient |
+| `--skeleton-highlight` | `rgba(0,0,0,0.14)` | `rgba(255,255,255,0.14)` | Peak highlight of shimmer sweep |
+
+The legacy `.loading-skeleton` wrapper class uses `--skeleton-bg-start`,
+`--skeleton-bg-via`, and `--skeleton-bg-end` (kept for backwards compatibility).
+
+All six variables are declared in `app/globals.css` under `:root` (light) and
+`@media (prefers-color-scheme: dark) > :root` (dark).
+
+### Selector hooks
+
+| CSS selector | `data-*` attribute | Used on |
+|---|---|---|
+| `.rw-skeleton` | — | Every individual shape |
+| `.rw-skeleton--shimmer` | — | Shapes with the shimmer variant |
+| — | `data-loading-state="skeleton"` | `SkeletonGroup` wrapper |
+| `.loading-skeleton-dashboard` | `data-loading-state="dashboard"` | Dashboard shell |
+| `.loading-skeleton-bills` | `data-loading-state="bills"` | Bills shell |
+| `.loading-skeleton-insights` | `data-loading-state="insights"` | Insights shell |
+| `.loading-skeleton-card` | `data-loading-state="card"` | `SkeletonCard` |
+| `.loading-skeleton-list` | `data-loading-state="list"` | `SkeletonList` |
+| `.loading-skeleton-chart` | `data-loading-state="chart"` | `SkeletonChart` |
+| `.loading-skeleton-shell` | `data-loading-state="shell"` | Section shells inside route skeletons |
+| `.loading-skeleton-widget` | `data-loading-state="widget"` | `SkeletonWidget` |
+
+### Stories
+
+- `UI/Skeleton` — `Shimmer`, `Static`, `ShimmerVersusStatic`, `Shapes`
+- `UI/SkeletonGroup` — `Default`, `StaticShapes`
+
+### Tests
+
+`tests/unit/ui/skeleton.test.tsx` — covers `Skeleton` class contracts,
+`SkeletonGroup` live-region semantics (role, aria-busy, label announcement,
+visually-hidden text, class forwarding, no-double-announce nesting, axe
+audit), and the reduced-motion CSS contract.
+
+---
+
+
 
 A fully accessible calendar grid date-picker that meets **WCAG 2.1 AA**.
 
@@ -436,3 +543,73 @@ Applied to:
 4. **Focus-based:** Shows on both hover and focus to ensure keyboard users discover shortcuts without needing to read documentation.
 
 5. **Escape dismissal:** Allows keyboard users to close tooltips without moving focus away from the trigger.
+
+---
+
+## PageHeadingLink
+
+An inline heading primitive that pairs a primary page title with a hash-link
+copy button. Clicking the button copies the canonical URL (origin + pathname +
+`#headingId`) to the clipboard and fires a success toast.
+
+**File:** `components/PageHeadingLink.tsx`
+
+### Props
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `headingId` | `string` | — | `id` attribute placed on the heading element. Must be stable across edits. |
+| `copyHeadingId` | `string` | `headingId` | Fragment used in the copied URL. Pass a different value to normalise legacy ids. |
+| `label` | `string` | — | Human-readable name used in the button's `aria-label` (e.g. `"Bills"`). |
+| `children` | `ReactNode` | — | Heading text content. |
+| `as` | `ElementType` | `"h1"` | Heading tag (`"h1"` – `"h6"`). |
+| `wrapperClassName` | `string` | `"flex min-w-0 items-center gap-2"` | Class on the flex wrapper `<div>`. |
+| `headingClassName` | `string` | — | Class on the heading element. |
+| `buttonClassName` | `string` | see source | Class on the copy button. |
+| `iconClassName` | `string` | `"h-4 w-4"` | Class on the `<Hash>` / `<Check>` icon. |
+
+### Feedback behaviour
+
+1. The button icon swaps from `<Hash>` to `<Check>` for `PAGE_HEADING_LINK_FEEDBACK_MS` (2 s).
+2. A `success` toast fires with the title **"Link copied"** and the copied URL as the description.
+3. On failure (clipboard denied, `execCommand` unavailable) the icon stays as `<Hash>` and no toast is emitted.
+4. The current browser URL is never mutated.
+
+### URL resolution
+
+Canonical URLs are built by `buildCanonicalHeadingUrl` in
+`lib/client/pageHeadingLink.ts`:
+
+- Trailing slashes are stripped from the pathname.
+- Legacy paths (`/insights`, `/financial-insight`) are rewritten to
+  `/financial-insights` and their heading id is rewritten to
+  `financial-insights-page-heading`.
+- The query string and existing hash are excluded from the copied link.
+
+### Usage
+
+```tsx
+import PageHeadingLink from "@/components/PageHeadingLink";
+
+export default function BillsPage() {
+  return (
+    <PageHeadingLink headingId="bills-page-heading" label="Bills">
+      Bills
+    </PageHeadingLink>
+  );
+}
+```
+
+### Tests
+
+`tests/unit/client/pageHeadingLink.test.tsx` covers:
+
+- `buildCanonicalHeadingUrl` pure function
+- Renders a semantic heading with the correct `id`
+- Copy updates the button label and resets after the timeout
+- **Success toast fires with "Link copied" and the copied URL**
+- **No toast fires when the copy fails**
+- `execCommand` fallback when `navigator.clipboard` is unavailable
+- Clipboard failure does not leave the button stuck in "copied" state
+- Legacy path resolution (`/insights`, `/financial-insight`)
+- Trailing slash stripping

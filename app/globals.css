@@ -75,10 +75,30 @@
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
 
-  /* Theme-styleable loading state custom properties */
+  /*
+   * Theme-styleable loading state custom properties.
+   *
+   * Legacy `.loading-skeleton` class tokens (kept for backwards compatibility):
+   *   --skeleton-bg-start, --skeleton-bg-via, --skeleton-bg-end
+   *
+   * rw-skeleton / rw-skeleton--shimmer tokens (used by the Skeleton component):
+   *   --skeleton-static   — flat fill for the static variant and reduced-motion fallback
+   *   --skeleton-base     — base colour of the shimmer gradient
+   *   --skeleton-highlight — peak highlight colour that travels across the shimmer
+   *
+   * All six variables are overridable by operators and downstream consumers to
+   * re-skin skeleton surfaces without touching component source.
+   */
+
+  /* Legacy `.loading-skeleton` tokens */
   --skeleton-bg-start: rgba(0, 0, 0, 0.06);
   --skeleton-bg-via: rgba(0, 0, 0, 0.12);
   --skeleton-bg-end: rgba(0, 0, 0, 0.06);
+
+  /* rw-skeleton tokens (light mode defaults) */
+  --skeleton-static: rgba(0, 0, 0, 0.08);
+  --skeleton-base: rgba(0, 0, 0, 0.06);
+  --skeleton-highlight: rgba(0, 0, 0, 0.14);
 
   /* Shortcut tooltip design tokens */
   --tooltip-bg: rgb(17, 24, 39); /* gray-900 */
@@ -103,6 +123,11 @@
     --skeleton-bg-start: rgba(255, 255, 255, 0.05);
     --skeleton-bg-via: rgba(255, 255, 255, 0.1);
     --skeleton-bg-end: rgba(255, 255, 255, 0.05);
+
+    /* rw-skeleton tokens (dark mode overrides) */
+    --skeleton-static: rgba(255, 255, 255, 0.08);
+    --skeleton-base: rgba(255, 255, 255, 0.05);
+    --skeleton-highlight: rgba(255, 255, 255, 0.14);
 
     /* Shortcut tooltip dark mode tokens */
     --tooltip-bg: rgb(31, 41, 55); /* gray-800 */
