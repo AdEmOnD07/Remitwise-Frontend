@@ -11,7 +11,6 @@
     "start": "next start",
     "check:img-alt": "node scripts/check-img-alt.js",
     "lint": "eslint . && npm run check:img-alt",
-    "check:img-alt": "node scripts/check-img-alt.js",
     "test": "npm run test:unit",
     "test:coverage": "node node_modules/vitest/vitest.mjs run --config vitest.config.mjs --configLoader runner --coverage",
     "test:watch": "node node_modules/vitest/vitest.mjs --config vitest.config.mjs --configLoader runner",
@@ -84,6 +83,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.0.0",
     "vitest": "^4.0.18",
+    "wait-on": "^9.1.0",
     "webpack": "^5.99.9"
   }
 }
