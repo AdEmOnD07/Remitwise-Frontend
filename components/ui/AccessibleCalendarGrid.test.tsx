@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { AccessibleCalendarGrid, type CalendarDate } from "./AccessibleCalendarGrid";
 
 expect.extend(toHaveNoViolations);
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,6 +104,45 @@ describe("AccessibleCalendarGrid — ARIA roles and structure", () => {
     const { container } = renderJuly2026();
     const live = container.querySelector("[aria-live='polite']");
     expect(live).not.toBeNull();
+  });
+
+  it("queues month-change announcements until the timing window elapses", () => {
+    vi.useFakeTimers();
+    const { container } = renderJuly2026();
+    const liveRegion = container.querySelector("[aria-live='polite']") as HTMLElement;
+    const nextButton = screen.getByRole("button", { name: /next month/i });
+
+    act(() => {
+      fireEvent.click(nextButton);
+    });
+
+    expect(liveRegion).toHaveTextContent("");
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(liveRegion).toHaveTextContent("August 2026");
+  });
+
+  it("replaces an earlier pending announcement with the latest month label", () => {
+    vi.useFakeTimers();
+    const { container } = renderJuly2026();
+    const liveRegion = container.querySelector("[aria-live='polite']") as HTMLElement;
+    const nextButton = screen.getByRole("button", { name: /next month/i });
+
+    act(() => {
+      fireEvent.click(nextButton);
+      fireEvent.click(nextButton);
+    });
+
+    expect(liveRegion).toHaveTextContent("");
+
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+
+    expect(liveRegion).toHaveTextContent("September 2026");
   });
 
   it("navigation buttons have descriptive aria-labels", () => {
