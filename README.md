@@ -247,6 +247,8 @@ remitwise-frontend/
 
 The full keyboard shortcut reference lives at [docs/KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md) — every registered shortcut, where it's handled, and how to add or change one.
 
+The accessible-focus baseline is documented at [docs/ACCESSIBLE_FOCUS_BASELINE.md](docs/ACCESSIBLE_FOCUS_BASELINE.md) — focus-visible styles, focus trap hooks, dialog focus management, and testing patterns.
+
 ## API Routes
 
 See [API Routes Documentation](./docs/API_ROUTES.md) for details on authentication and available endpoints.
