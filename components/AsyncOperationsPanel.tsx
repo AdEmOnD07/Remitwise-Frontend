@@ -98,8 +98,25 @@ export default function AsyncOperationsPanel({
 	footer,
 }: AsyncOperationsPanelProps) {
 	const { state } = useAsyncOperations();
-	const [expanded, setExpanded] = useState(false);
+	const [expanded, setExpanded] = useState(() => {
+		if (typeof window !== 'undefined') {
+			try {
+				return sessionStorage.getItem('asyncPanelExpanded') === 'true';
+			} catch (e) {
+				return false;
+			}
+		}
+		return false;
+	});
 	const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			try {
+				sessionStorage.setItem('asyncPanelExpanded', String(expanded));
+			} catch (e) {}
+		}
+	}, [expanded]);
 
 	const queueItems = useMemo(() => {
 		if (state.operations.length > 0) {
