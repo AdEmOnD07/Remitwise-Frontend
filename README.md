@@ -12,6 +12,7 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 - [Elevation and shadow guidance](./docs/ELEVATION.md)
 - [Period lifecycle and state machine](./docs/PERIOD_LIFECYCLE.md)
 - [Internal jargon glossary (contributors)](./docs/GLOSSARY.md)
+- [Resize handling patterns for contributors](./docs/RESIZE_HANDLING.md)
 
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
@@ -209,7 +210,6 @@ npm run test:e2e
 
 For validating responsive breakpoints and layouts across different viewports, see the [Responsive Testing Guide](docs/RESPONSIVE_TESTING.md).
 
-
 ## Project Structure
 
 ```
@@ -271,14 +271,14 @@ Each client-side route can define its own `<title>` and `<meta name="description
 ### Quick Start
 
 ```tsx
-"use client";
+'use client';
 
-import { useSeo } from "@/lib/hooks/useSeo";
+import { useSeo } from '@/lib/hooks/useSeo';
 
 export default function MyPage() {
   useSeo({
-    title: "My Page | RemitWise",
-    description: "A short description of what this page does.",
+    title: 'My Page | RemitWise',
+    description: 'A short description of what this page does.',
   });
 
   return <main>{/* page content */}</main>;
@@ -291,9 +291,9 @@ Defaults are defined in [`lib/config/seo.ts`](./lib/config/seo.ts):
 
 ```ts
 export const DEFAULT_SEO = {
-  title: "RemitWise - Smart Remittance & Financial Planning",
+  title: 'RemitWise - Smart Remittance & Financial Planning',
   description:
-    "A remittance app that helps families save, plan, and protect — not just send money.",
+    'A remittance app that helps families save, plan, and protect — not just send money.',
 };
 ```
 
@@ -316,7 +316,7 @@ Async Server Components (e.g. dynamic `[tutorialId]` routes) use Next.js's built
 ```ts
 export async function generateMetadata({ params }): Promise<Metadata> {
   const { id } = await params;
-  return { title: `${id} | RemitWise`, description: "..." };
+  return { title: `${id} | RemitWise`, description: '...' };
 }
 ```
 
@@ -949,14 +949,16 @@ For full details, selectors list, and examples, see the [Frontend Component Stat
 RemitWise includes pre-configured Open Graph and Twitter Card metadata so that sharing the app link on platforms like Slack, Twitter, and Facebook renders a rich media preview.
 
 **Configuration File**:
+
 - Constants are maintained centrally in `lib/config/metadata.ts`.
 - Edit `METADATA_CONFIG` to customize default title, description, application URL, and image specs.
 
 **Metadata Fields**:
+
 - `metadataBase` resolves relative image/page URLs to absolute paths.
 - `openGraph` properties (`og:title`, `og:description`, `og:url`, `og:image`, `og:type`) are automatically rendered.
 - `twitter` properties (`twitter:card` set to `summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`) are included.
 
 **Assets**:
-- The default preview image is served from `public/og-image.jpg`.
 
+- The default preview image is served from `public/og-image.jpg`.

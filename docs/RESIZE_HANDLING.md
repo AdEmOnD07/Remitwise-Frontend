@@ -2,62 +2,57 @@
 
 **Audience:** Contributors
 
-This document describes how the Remitwise-Frontend codebase handles window and container resize events efficiently. It covers the hooks, utilities, and patterns contributors should follow when adding new responsive behaviour.
+This guide documents the resize patterns that are already used in this repository. The current implementation relies mostly on CSS-based responsive design, with a small number of JavaScript hooks for container measurements and breakpoint-based UI changes.
 
 ---
 
-## Why Resize Handling Matters
+## Why resize handling exists
 
-Remitwise runs on devices ranging from 320px (iPhone SE) to 1440px+ desktops. Resize events drive:
+Resize work is needed when the UI must react to viewport or container changes, such as:
 
-- Responsive layout shifts (grid columns, padding, text size)
-- Chart container reflows (Recharts `ResponsiveContainer`)
-- Mobile vs. desktop UI variants (e.g. shorter search placeholders on small screens)
-- Accessibility gating (reduced-motion preference changes)
+- chart containers that need to reflow their drawing area
+- mobile vs. desktop placeholder text
+- layout adjustments that cannot be expressed cleanly with plain CSS
 
-Uncontrolled or un-throttled resize listeners cause layout thrashing, unnecessary React renders, and janky scrolling. The patterns below keep resize work efficient and predictable.
+The repository keeps this work efficient by preferring CSS and shared hooks over ad hoc listeners. That avoids layout thrashing, unnecessary renders, and expensive work on every pixel change.
 
 ---
 
-## Current Architecture
+## Current architecture
 
-### 1. Tailwind CSS Responsive Utilities (Primary Approach)
+### 1. Tailwind responsive utilities are the default approach
 
-The **dominant responsive strategy** is CSS-based. Tailwind breakpoint prefixes handle layout without any JavaScript resize listeners.
+The primary pattern is CSS-first. Responsive classes are defined in [tailwind.config.js](../tailwind.config.js) with custom breakpoints for small mobile devices and larger tablets/desktops.
 
-**Custom breakpoints** defined in `tailwind.config.js`:
+Custom screens include:
 
-| Prefix | Width | Target |
-|--------|-------|--------|
-| `320:` | 320px | iPhone SE |
-| `375:` | 375px | iPhone 14 |
-| `450:` | 450px | Foldables |
-| `tablet:` | 768px | iPad portrait |
-| `laptop:` | 1024px | iPad landscape |
-| `desktop:` | 1440px | Desktop |
+- `320:` for very small phones
+- `375:` for the main mobile target
+- `450:` for larger phones and foldables
+- `tablet:` for tablets
+- `laptop:` for landscape tablets
+- `desktop:` for desktop layouts
 
-**Example — progressive padding:**
+Example from the codebase:
 
 ```tsx
-<main className="max-w-7xl mx-auto px-5 320:px-6 375:px-7 sm:px-6 lg:px-8 py-7 375:py-8">
+<main className="max-w-7xl mx-auto px-5 320:px-6 375:px-7 sm:px-6 lg:px-8 py-7 375:py-8" />
 ```
 
-This approach requires zero JavaScript and triggers no React renders. Use it whenever possible.
+This is the preferred option when a layout change can be expressed in utility classes.
 
-### 2. `useResizeObserver` — Container Resize
+### 2. Shared hooks cover the small amount of JS resize logic
 
-**File:** `lib/hooks/useResizeObserver.ts`
-
-The hook wraps the browser `ResizeObserver` API for observing element size changes. It is SSR-safe, cleans up on unmount, and handles target changes.
+The repository has a shared hook in [lib/hooks/useResizeObserver.ts](../lib/hooks/useResizeObserver.ts). It wraps the browser `ResizeObserver` API and cleans up on unmount.
 
 ```tsx
-import { useResizeObserver } from "@/lib/hooks/useResizeObserver";
+import { useResizeObserver } from '@/lib/hooks/useResizeObserver';
 
 function ResizablePanel() {
   const ref = useResizeObserver((entries) => {
     for (const entry of entries) {
       const { width, height } = entry.contentRect;
-      console.log("New size:", width, height);
+      console.log('New size:', width, height);
     }
   });
 
@@ -65,251 +60,138 @@ function ResizablePanel() {
 }
 ```
 
-**Key properties:**
+Key details:
 
-- Returns a `RefObject` you attach to the target element
-- Automatically disconnects the observer on unmount
-- Re-observes when the target element changes
-- Skips gracefully when `ResizeObserver` is unavailable (SSR, old browsers)
-- Uses a ref-based callback pattern to avoid re-creating observers on every render
+- it returns a ref you attach to the target element
+- it disconnects the observer on cleanup
+- it skips gracefully when `ResizeObserver` is unavailable
+- it uses a ref-based callback so observers are not recreated on every render
 
-### 3. `matchMedia` — Breakpoint Detection in JS
+This hook exists, but the product UI currently uses it sparingly. Most responsive behavior is still handled by CSS and chart components.
 
-When you need a boolean in React state (e.g. to swap UI variants), use `window.matchMedia` — **not** `window.addEventListener("resize", ...)`.
+### 3. Breakpoint-based UI uses `matchMedia`, not `window.resize`
 
-**Real example** from `app/dashboard/transaction-history/components/transaction-history-search-input.tsx`:
+When the code needs a JavaScript boolean for mobile vs. desktop behavior, the existing pattern is to use `window.matchMedia` and listen for `change` events.
+
+Real example from [app/dashboard/transaction-history/components/transaction-history-search-input.tsx](../app/dashboard/transaction-history/components/transaction-history-search-input.tsx):
 
 ```tsx
 const [isMobile, setIsMobile] = useState(false);
 
 useEffect(() => {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
-  const mediaQuery = window.matchMedia("(max-width: 639px)");
+  const mediaQuery = window.matchMedia('(max-width: 639px)');
   const updateMatch = () => setIsMobile(mediaQuery.matches);
 
   updateMatch();
-  mediaQuery.addEventListener("change", updateMatch);
+  mediaQuery.addEventListener('change', updateMatch);
 
-  return () => mediaQuery.removeEventListener("change", updateMatch);
+  return () => mediaQuery.removeEventListener('change', updateMatch);
 }, []);
 ```
 
-This pattern:
+This is the repository’s preferred approach for JS breakpoint changes. It is more efficient than listening to `window.resize` on every pixel change.
 
-- SSR-guards with `typeof window` check
-- Sets initial state synchronously
-- Listens only to the `change` event (fires on breakpoint crosses, not every pixel)
-- Cleans up on unmount
+### 4. Recharts uses responsive containers for chart reflow
 
-**When to use:** You need a JS-readable boolean for a breakpoint that Tailwind cannot express (e.g. swapping a placeholder string based on mobile vs. desktop).
-
-### 4. Recharts `ResponsiveContainer` — Chart Reflows
-
-Chart components (`MoneyDistributionWidget`, `SixMonthTrendsWidget`, `remittanceTrendChart`, etc.) use Recharts' `<ResponsiveContainer>` which internally creates a `ResizeObserver` on the chart's parent element.
+Several chart components rely on Recharts’ `ResponsiveContainer`, which internally observes the chart’s parent size. Examples include [components/Dashboard/SixMonthTrendsWidget.tsx](../components/Dashboard/SixMonthTrendsWidget.tsx) and [components/Insights/remittanceTrendChart.tsx](../components/Insights/remittanceTrendChart.tsx).
 
 ```tsx
-import { ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-
-<ResponsiveContainer width="100%" height="100%">
-  <PieChart>
-    <Pie data={data} dataKey="value">
-      {data.map((entry, i) => <Cell key={i} fill={colors[i]} />)}
-    </Pie>
-  </PieChart>
-</ResponsiveContainer>
+<div
+  className="w-full h-[280px] sm:h-[320px]"
+  role="img"
+  aria-label={chartLabel}
+>
+  <ResponsiveContainer width="100%" height="100%">
+    <LineChart data={chartData}>{/* chart content */}</LineChart>
+  </ResponsiveContainer>
+</div>
 ```
 
-No custom resize logic is needed — `ResponsiveContainer` handles it.
+For charts, this is the normal path. No custom resize listener is required.
 
-### 5. `useEventListener` — General-Purpose DOM Listener
+### 5. Generic event hooks exist, but resize listeners are not the main pattern
 
-**File:** `lib/hooks/useEventListener.ts`
-
-A generic hook for attaching any DOM event listener with automatic cleanup. While it can listen to `"resize"` on `window`, this pattern is **not used** for resize in this codebase. The hook is used for other events (keyboard, clicks, etc.).
-
-If you do need a raw `resize` listener (rare), `useEventListener` handles cleanup:
-
-```tsx
-import { useEventListener } from "@/lib/hooks/useEventListener";
-
-useEventListener("resize", () => {
-  // Handle window resize
-}, window);
-```
+The repository also has [lib/hooks/useEventListener.ts](../lib/hooks/useEventListener.ts). It is a generic hook for DOM events, but the current resize implementation does not rely on it for window resize handling. In practice, contributors should prefer `matchMedia` or `ResizeObserver` over a raw window resize listener.
 
 ---
 
-## Debounce Utilities
+## Best practices
 
-Expensive work triggered by resize (e.g. API calls, heavy computations) should be debounced.
+1. Prefer CSS over JS for layout changes.
+   Use Tailwind breakpoints first whenever the change can be expressed in utility classes.
 
-### `useDebounce`
+2. Use `matchMedia` for breakpoint booleans.
+   If the UI needs to know whether it is mobile or desktop, use `window.matchMedia` and the `change` event.
 
-**File:** `lib/hooks/useDebounce.ts`
+3. Use `useResizeObserver` for element-sized measurements.
+   Use the shared hook when a component needs the size of a specific container.
 
-Returns a debounced copy of a value. The value only updates after `delay` ms of inactivity.
+4. Always clean up observers and listeners.
+   The repository pattern is to return a cleanup function from `useEffect`.
 
-```tsx
-import { useDebounce } from "@/lib/hooks/useDebounce";
+5. Debounce expensive work.
+   When resize-driven work triggers API calls, large computations, or state changes, use [lib/hooks/useDebounce.ts](../lib/hooks/useDebounce.ts) or [lib/hooks/useDebouncedValue.ts](../lib/hooks/useDebouncedValue.ts).
 
-const debouncedSearch = useDebounce(searchQuery, 300);
-```
+6. Avoid reading layout during render.
+   Do not read `clientWidth`, `offsetWidth`, or `getBoundingClientRect()` while rendering. Measure in `useEffect`.
 
-Used in `app/transactions/page.tsx` and `app/dashboard/transaction-history/page.tsx` for search input debouncing.
-
-### `useDebouncedValue`
-
-**File:** `lib/hooks/useDebouncedValue.ts`
-
-Similar to `useDebounce` but with a `mountedRef` guard to prevent state updates on unmounted components. Default delay is 300ms.
-
-```tsx
-import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
-
-const debouncedAmount = useDebouncedValue(amount, 400);
-
-useEffect(() => {
-  if (debouncedAmount) fetchQuote(debouncedAmount);
-}, [debouncedAmount]);
-```
-
-Used in `app/send/components/AmountCurrencySection.tsx` for debounced quote fetching.
+7. Reuse existing helpers.
+   Do not introduce a new resize hook or debounce utility unless the existing ones cannot cover the need.
 
 ---
 
-## Best Practices
-
-1. **Prefer CSS over JS for responsive layout.** Use Tailwind breakpoint prefixes (`320:`, `375:`, `tablet:`, `desktop:`) for grid columns, padding, text sizes, and visibility. This avoids JavaScript overhead entirely.
-
-2. **Use `useResizeObserver` for container sizes.** When you need to react to a specific element's dimensions (e.g. chart containers, collapsible panels), use the shared hook. Do not create raw `ResizeObserver` instances in components.
-
-3. **Use `matchMedia` for JS breakpoint booleans.** Do not attach `window.addEventListener("resize", ...)`. The `matchMedia` approach fires only on breakpoint crosses, not on every pixel change.
-
-4. **Always clean up listeners and observers.** Every `useResizeObserver`, `useEventListener`, and `matchMedia` listener must have a cleanup function in its `useEffect` return.
-
-5. **Debounce expensive resize handlers.** If a resize callback triggers an API call, a heavy computation, or a state update that causes a large re-render, debounce it with `useDebounce` or `useDebouncedValue`.
-
-6. **Avoid measuring DOM during render.** Never read `element.getBoundingClientRect()` or `element.clientWidth` during the render phase. Measure inside `useEffect` or `useLayoutEffect` only.
-
-7. **Reuse existing utilities.** Do not create a new debounce function, a new `useMediaQuery` hook, or a new `ResizeObserver` wrapper. Use the ones in `lib/hooks/`.
-
-8. **Guard for SSR.** Always check `typeof window === "undefined"` before accessing browser APIs like `ResizeObserver` or `matchMedia`.
-
----
-
-## Common Mistakes
+## Common mistakes
 
 ### Forgetting cleanup
 
-```tsx
-// BAD — observer is never disconnected
-useEffect(() => {
-  const observer = new ResizeObserver(callback);
-  observer.observe(element);
-}, []);
-```
+Do not create an observer or listener without a cleanup function.
 
 ```tsx
-// GOOD — cleanup function disconnects the observer
+// Avoid
 useEffect(() => {
-  const observer = new ResizeObserver(callback);
-  observer.observe(element);
-  return () => observer.disconnect();
-}, []);
-```
-
-### Using window resize instead of matchMedia
-
-```tsx
-// BAD — fires on every pixel change, causes excessive re-renders
-useEffect(() => {
-  const handler = () => setIsMobile(window.innerWidth < 640);
-  window.addEventListener("resize", handler);
-  return () => window.removeEventListener("resize", handler);
-}, []);
-```
-
-```tsx
-// GOOD — fires only on breakpoint crosses
-useEffect(() => {
-  const mq = window.matchMedia("(max-width: 639px)");
-  const handler = () => setIsMobile(mq.matches);
-  handler();
-  mq.addEventListener("change", handler);
-  return () => mq.removeEventListener("change", handler);
-}, []);
-```
-
-### Creating ResizeObservers without disconnecting
-
-```tsx
-// BAD — observer leaks on every callback change
-useEffect(() => {
-  const observer = new ResizeObserver((entries) => {
-    // heavy work
+  const observer = new ResizeObserver(() => {
+    // work
   });
   observer.observe(element);
-});
+}, []);
 ```
+
+### Adding a window resize listener for every breakpoint change
+
+Avoid `window.addEventListener("resize", ...)` for simple responsive toggles. The current codebase uses `matchMedia` instead.
 
 ### Measuring DOM during render
 
-```tsx
-// BAD — reads layout during render, triggers layout thrashing
-function Panel() {
-  const width = document.getElementById("panel")?.clientWidth ?? 0;
-  return <div>Width: {width}</div>;
-}
-```
+Do not compute dimensions during render, since that can cause layout thrashing and repeated reflows.
 
-### Multiple resize listeners on the same element
+### Creating a new ResizeObserver without disconnecting it
 
-If two hooks or components both observe the same element, create separate `useResizeObserver` instances rather than duplicating observer logic. Each instance cleans up independently.
+If a component creates a raw observer, make sure it disconnects on unmount and when the target changes.
 
 ---
 
-## Adding New Resize Logic
+## Adding new resize logic
 
-### When to use `useResizeObserver`
+Use the following decision guide:
 
-- You need the pixel dimensions of a specific DOM element
-- You are building a chart, map, or canvas that must fill its container
-- You are implementing a collapsible or resizable panel
+- Use Tailwind when the change is purely visual and can be expressed with classes.
+- Use `matchMedia` when the component needs a boolean for mobile/desktop behavior.
+- Use `useResizeObserver` when the component needs the actual size of a specific DOM element.
+- Use Recharts `ResponsiveContainer` for charts that need to size to their parent.
+- Put new hooks in [lib/hooks](../lib/hooks) and keep the component logic small.
 
-### When `matchMedia` is sufficient
-
-- You need to know if the viewport is above or below a breakpoint
-- You want to swap a UI variant (e.g. mobile vs. desktop placeholder text)
-- You want to conditionally render different components at different sizes
-
-### When Tailwind is sufficient
-
-- You are changing padding, margin, grid columns, text size, or visibility
-- You do not need the size value in JavaScript
-
-### Where new resize logic should live
-
-- **Hooks** go in `lib/hooks/` with a `use` prefix
-- **Components** that consume resize data stay in `components/` or `app/`
-- Do not put resize logic in layout files or page components — extract it into a reusable hook
-
-### Keeping resize behaviour performant
-
-- Debounce any resize callback that triggers API calls or heavy computations
-- Prefer `matchMedia` change events over `window.resize` events
-- Use `useResizeObserver` instead of raw `ResizeObserver` to get automatic cleanup
-- Avoid reading layout properties (`getBoundingClientRect`, `clientWidth`) in tight loops
+If the resize callback will trigger expensive work, debounce it instead of running it on every event.
 
 ---
 
-## Related Documentation
+## Related documentation
 
-- [Responsive Breakpoint Guide](./RESPONSIVE_BREAKPOINT_GUIDE.md) — Custom breakpoints and spacing scale
-- [Motion Vocabulary](./MOTION.md) — Animation durations and `prefers-reduced-motion`
-- [Tailwind Extensions](./tailwind-extensions.md) — Custom utilities and tokens
-- [Elevation & Shadow](./ELEVATION.md) — Visual layer system
+- [RESPONSIVE_BREAKPOINT_GUIDE.md](./RESPONSIVE_BREAKPOINT_GUIDE.md)
+- [MOTION.md](./MOTION.md)
+- [COMPONENT_STATES.md](./COMPONENT_STATES.md)
 
 ---
 
-**Last Updated:** 2026-07-26
+Last updated: 2026-07-26
