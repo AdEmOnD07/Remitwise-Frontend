@@ -234,13 +234,13 @@ Before opening a PR, run the same checks CI runs (see
 
 ```bash
 npm run lint            # ESLint must pass
-npx tsc --noEmit        # type-check (npm run build runs this as part of next build)
+npm run typecheck        # type-check (npm run build runs tsc as part of next build)
 npm run test            # unit suites
 npm run test:integration# integration suites (needs DATABASE_URL)
 npm run test:e2e        # Playwright (CI installs chromium first)
 ```
 
-For local development the fast loop is `npm run lint && npx tsc --noEmit && npm run test`;
+For local development the fast loop is `npm run check` (or `npm run lint && npm run typecheck && npm run test`);
 run `npm run test:coverage`, `test:integration`, and `test:e2e` before pushing anything
 that touches API routes, validation, or user flows.
 
