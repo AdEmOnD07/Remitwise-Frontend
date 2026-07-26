@@ -261,19 +261,76 @@ export function WidgetLoading() {
 }
 ```
 
+#### `SkeletonGroup` — live region wrapper
+
+Wrap one or more `Skeleton` shapes in `<SkeletonGroup>` to give screen-reader
+users a polite announcement while the placeholder is on screen.
+
+```tsx
+import { Skeleton, SkeletonGroup } from "@/components/ui/Skeleton";
+
+export function TransactionListLoading() {
+  return (
+    <SkeletonGroup label="Loading transaction history" className="space-y-3">
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <Skeleton className="h-12 w-full rounded-xl" />
+    </SkeletonGroup>
+  );
+}
+```
+
+`SkeletonGroup` renders:
+- `role="status"` / `aria-busy="true"` — a polite live region.
+- `aria-label` set to the `label` prop (defaults to `"Loading"`).
+- A visually-hidden `<span className="sr-only">` containing the label text so
+  the announcement is present in the accessibility tree even in browsers that
+  derive the accessible name from content rather than `aria-label`.
+- All `children` rendered normally — individual `<Skeleton>` shapes remain
+  `aria-hidden="true"` (decorative only).
+- `data-loading-state="skeleton"` for CSS/test selector hooks.
+
+**Do not nest `SkeletonGroup` inside another `SkeletonGroup`** — nesting
+creates double announcements. One group per loading surface is sufficient.
+
 ### 6.2 CSS Custom Properties & Selector Hooks
-Skeletons and loader components expose custom CSS properties and semantic class/attribute hooks for layout styling:
+Skeletons and loader components expose custom CSS properties and semantic class/attribute hooks for layout styling and downstream theming:
 
 #### CSS Custom Properties
-- `--skeleton-bg-start`: Base/start background color of shimmer gradient.
-- `--skeleton-bg-via`: Middle highlight color of shimmer gradient.
-- `--skeleton-bg-end`: Base/end background color of shimmer gradient.
+
+The `rw-skeleton` / `rw-skeleton--shimmer` classes (used by every `<Skeleton>`)
+draw from three theme tokens:
+
+| Variable | Purpose |
+|---|---|
+| `--skeleton-static` | Flat fill used by the `static` variant and by the reduced-motion fallback |
+| `--skeleton-base` | Base colour of the shimmer gradient sweep |
+| `--skeleton-highlight` | Peak highlight colour that travels across the shimmer |
+
+All three tokens have both light-mode and dark-mode defaults in
+`app/globals.css` (inside `:root` and `@media (prefers-color-scheme: dark) > :root`
+respectively). Operators and downstream consumers can override any or all of
+them on `:root` or on a scoped selector without touching component source.
+
+The legacy `.loading-skeleton` class (used on route-level wrappers) exposes a
+separate, backwards-compatible set:
+
+| Variable | Purpose |
+|---|---|
+| `--skeleton-bg-start` | Start colour of the legacy gradient |
+| `--skeleton-bg-via` | Mid-point highlight of the legacy gradient |
+| `--skeleton-bg-end` | End colour of the legacy gradient |
 
 #### Selector Hooks
-- **Base Skeleton block**: `.loading-skeleton` / `data-loading-state="skeleton"`
+- **Individual placeholder shape**: `.rw-skeleton` / `.rw-skeleton--shimmer`
+- **Live-region group**: `[data-loading-state="skeleton"]`
+- **Dashboard shell**: `.loading-skeleton-dashboard` / `data-loading-state="dashboard"`
+- **Bills shell**: `.loading-skeleton-bills` / `data-loading-state="bills"`
+- **Insights shell**: `.loading-skeleton-insights` / `data-loading-state="insights"`
 - **Skeleton Card**: `.loading-skeleton-card` / `data-loading-state="card"`
 - **Skeleton List**: `.loading-skeleton-list` / `data-loading-state="list"`
 - **Skeleton Chart**: `.loading-skeleton-chart` / `data-loading-state="chart"`
+- **Section shell**: `.loading-skeleton-shell` / `data-loading-state="shell"`
 
 ### 6.3 Button Loading Spinner
 When submitting forms, action buttons display a loading spinner and transition text while disabling interactions:
