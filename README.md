@@ -2,7 +2,7 @@
 
 Frontend application for the RemitWise remittance and financial planning platform.
 
-> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers. For data fetching and caching patterns, see [docs/CACHE_STRATEGY.md](docs/CACHE_STRATEGY.md). For PWA installation and update behavior, see [docs/PWA.md](docs/PWA.md).
+> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers. For data fetching and caching patterns, see [docs/CACHE_STRATEGY.md](docs/CACHE_STRATEGY.md).
 
 ## Overview
 
@@ -10,15 +10,14 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 
 - [Prisma data model and durability boundary](./docs/data-model.md)
 - [Elevation and shadow guidance](./docs/ELEVATION.md)
-- [Scroll isolation guide (contributors)](./docs/SCROLL_ISOLATION.md)
 - [Period lifecycle and state machine](./docs/PERIOD_LIFECYCLE.md)
 - [Internal jargon glossary (contributors)](./docs/GLOSSARY.md)
-- [Empty-state vs onboarding vs tutorial decision matrix](./docs/ONBOARDING_UX.md)
 
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Utility-first styling
-- **Lucide React** - Icon library — see [docs/ICON_SYSTEM.md](docs/ICON_SYSTEM.md) for usage, sizing, and adding custom icons; for a quick name / source / preferred-use lookup see [docs/ICON_REFERENCE.md](docs/ICON_REFERENCE.md)
+- **Typography Scale** - See [docs/TYPOGRAPHY_SCALE.md](docs/TYPOGRAPHY_SCALE.md) for the project typography scale, font weights, line heights, and usage guidance.
+- **Lucide React** - Icon library — see [docs/ICON_SYSTEM.md](docs/ICON_SYSTEM.md) for usage, sizing, and adding custom icons
 
 ## Features (Placeholders)
 
@@ -39,15 +38,11 @@ The frontend includes placeholder pages and components for:
 
 ## Loading States
 
-Dashboard, Bills, and Insights now use route-level skeleton screens built from `components/ui/Skeleton.tsx` so primary panels load with stable layout blocks instead of ad-hoc spinners. For detailed guidelines and implementation patterns on all UI states (Default, Error, Disabled, and Loading), see [docs/COMPONENT_STATES.md](docs/COMPONENT_STATES.md).
+Dashboard, Bills, and Insights now use route-level skeleton screens built from `components/ui/Skeleton.tsx` so primary panels load with stable layout blocks instead of ad-hoc spinners. For detailed guidelines and implementation patterns on all UI states (Default, Error, Disabled, and Loading), see [docs/component-states.md](docs/component-states.md).
 
 ## Performance Budgets
 
 Every page route has a per-route load-time budget based on its user impact tier. These budgets are enforced in CI via Lighthouse E2E tests and monitored in production through structured request logs. For the full route-to-budget map, measurement approach, and how to add budgets for new routes, see [docs/LOAD_TIME_BUDGETS.md](docs/LOAD_TIME_BUDGETS.md).
-
-## Bundle Analysis
-
-To measure, inspect, and optimize the JavaScript bundle size using `@next/bundle-analyzer`, see [docs/BUNDLE_ANALYSIS.md](docs/BUNDLE_ANALYSIS.md).
 
 ## Sentry
 
@@ -67,7 +62,7 @@ PII scrubbing is applied before events leave the app:
 
 Keep the auth token out of the repo and store it only in CI secrets.
 
-For more details on tracking, cookies, and telemetry configuration, see the [Tracking and Opt-Out Guide](docs/tracking-and-opt-out.md). For a full inventory of every first-party cookie (name, `HttpOnly`, `SameSite`, `Secure`, and where each is written), see [docs/COOKIE_HANDLING.md](docs/COOKIE_HANDLING.md).
+For more details on tracking, cookies, and telemetry configuration, see the [Tracking and Opt-Out Guide](docs/tracking-and-opt-out.md).
 
 ## Getting Started
 
@@ -77,9 +72,6 @@ The application requires connection to a Soroban RPC node.
 
 - **Testnet:** `https://soroban-testnet.stellar.org` (Passphrase: `Test SDF Network ; September 2015`)
 - **Mainnet:** `https://soroban-rpc.stellar.org` (Passphrase: `Public Global Stellar Network ; September 2015`)
-
-**Frontend Configurations:**
-- `NEXT_PUBLIC_TOAST_TIMEOUT`: Auto-dismiss timeout for toasts in milliseconds. Default is `5000`. Pass `0` to require manual dismissal.
 
 ### Prerequisites
 
@@ -207,8 +199,6 @@ RemitWise implements a nonce-based challenge-response authentication mechanism t
 3. **Submit Signature:** The client submits `{"address": "...", "signature": "..."}` to `POST /api/auth/login`. The signature should be base64-encoded.
 4. **Verification:** The backend converts the nonce to a Buffer and verifies the base64 signature against the supplied public address using `@stellar/stellar-sdk` (`Keypair.fromPublicKey(address).verify(nonceBuffer, signatureBuffer)`). Invalid signatures or missing/expired nonces will receive a `401 Unauthorized`.
 
-See [Magic Links](docs/MAGIC_LINKS.md) for nonce generation details, TTL values, and known limitations.
-
 ### End-to-End Testing
 
 To run the Playwright end-to-end tests for authentication and protected routes:
@@ -219,6 +209,7 @@ npm run test:e2e
 ```
 
 For validating responsive breakpoints and layouts across different viewports, see the [Responsive Testing Guide](docs/RESPONSIVE_TESTING.md).
+
 
 ## Project Structure
 
@@ -241,7 +232,7 @@ remitwise-frontend/
 │   └── auth.ts              # Auth middleware
 ├── docs/                    # Documentation
 │   ├── API_ROUTES.md        # API routes documentation
-│   ├── COMPONENT_STATES.md  # Standard UI states (default, error, disabled, loading) guide
+│   ├── component-states.md  # Standard UI states (default, error, disabled, loading) guide
 │   ├── contract-cache.md    # Contract caching architecture and guidelines
 │   ├── frame-budget-rules.md    # Frame budget performance guidelines
 │   └── RESPONSIVE_TESTING.md # Guide to verifying responsive breakpoints and layout behavior
@@ -250,8 +241,6 @@ remitwise-frontend/
 ```
 
 The full keyboard shortcut reference lives at [docs/KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md) — every registered shortcut, where it's handled, and how to add or change one.
-
-The accessible-focus baseline is documented at [docs/ACCESSIBLE_FOCUS_BASELINE.md](docs/ACCESSIBLE_FOCUS_BASELINE.md) — focus-visible styles, focus trap hooks, dialog focus management, and testing patterns.
 
 ## API Routes
 
@@ -276,35 +265,6 @@ Route-level page titles now use a shared deep-link heading pattern. Use the shar
 
 The `/transactions` view only ever lists user-initiated interactions (sends, splits, bill payments, etc.) and its type filter is how a reader narrows that list. See [docs/transactions-user-interaction-filter.md](docs/transactions-user-interaction-filter.md) for the model and what to update if a system-generated entry type is ever added.
 
-## Centralized IntersectionObserver (`useIntersectionObserver` / `useScrollSpy`)
-
-All `IntersectionObserver` usage in the codebase is centralized through two hooks in `lib/hooks/useIntersectionObserver.ts`. Calling `new IntersectionObserver(...)` directly is not needed — use the hooks instead.
-
-| Hook | Use-case |
-|---|---|
-| `useIntersectionObserver` | Observe a **single** element. Returns a ref to attach to JSX. |
-| `useScrollSpy` | Observe **multiple** section elements for scroll-spy navigation. |
-
-Both hooks guarantee `observer.disconnect()` is called on unmount and on every dependency change. The callback is kept via a stable ref so it never stales.
-
-```tsx
-// Single element
-import { useIntersectionObserver } from "@/lib/hooks/useIntersectionObserver";
-const ref = useIntersectionObserver(([e]) => e.isIntersecting && loadMore(), { rootMargin: "200px" });
-return <div ref={ref} />;
-
-// Multiple sections (scroll-spy)
-import { useScrollSpy } from "@/lib/hooks/useIntersectionObserver";
-useScrollSpy(["profile", "security", "preferences"], setActiveId, {
-  rootMargin: "-20% 0px -60% 0px",
-  threshold: [0, 0.25, 0.5, 0.75, 1],
-});
-```
-
-`useInfiniteScrollObserver` (`lib/hooks/useInfiniteScrollObserver.ts`) is built on top of `useIntersectionObserver` and provides automatic infinite-scroll pagination with reduced-motion fallback.
-
-Full API reference: [docs/HOOKS.md](docs/HOOKS.md)
-
 ## Per-Route SEO Metadata (`useSeo`)
 
 Each client-side route can define its own `<title>` and `<meta name="description">` using the `useSeo` hook.
@@ -312,14 +272,14 @@ Each client-side route can define its own `<title>` and `<meta name="description
 ### Quick Start
 
 ```tsx
-'use client';
+"use client";
 
-import { useSeo } from '@/lib/hooks/useSeo';
+import { useSeo } from "@/lib/hooks/useSeo";
 
 export default function MyPage() {
   useSeo({
-    title: 'My Page | RemitWise',
-    description: 'A short description of what this page does.',
+    title: "My Page | RemitWise",
+    description: "A short description of what this page does.",
   });
 
   return <main>{/* page content */}</main>;
@@ -332,9 +292,9 @@ Defaults are defined in [`lib/config/seo.ts`](./lib/config/seo.ts):
 
 ```ts
 export const DEFAULT_SEO = {
-  title: 'RemitWise - Smart Remittance & Financial Planning',
+  title: "RemitWise - Smart Remittance & Financial Planning",
   description:
-    'A remittance app that helps families save, plan, and protect — not just send money.',
+    "A remittance app that helps families save, plan, and protect — not just send money.",
 };
 ```
 
@@ -357,7 +317,7 @@ Async Server Components (e.g. dynamic `[tutorialId]` routes) use Next.js's built
 ```ts
 export async function generateMetadata({ params }): Promise<Metadata> {
   const { id } = await params;
-  return { title: `${id} | RemitWise`, description: '...' };
+  return { title: `${id} | RemitWise`, description: "..." };
 }
 ```
 
@@ -777,13 +737,11 @@ GET  /api/admin/audit         # Admin-only audit events
 - UI uses a blue/indigo color scheme
 - Responsive design with mobile-first approach
 - Motion vocabulary and standard animations are documented in [docs/MOTION.md](docs/MOTION.md).
-- Window and container resize handling patterns are documented in [docs/RESIZE_HANDLING.md](docs/RESIZE_HANDLING.md).
 - Components are structured for easy integration
 
 Design token reference and migration guides:
 
 - [docs/THEMING.md](docs/THEMING.md) — full catalogue of CSS custom properties, Tailwind color, spacing, focus-ring, and animation tokens with semantic roles and usage examples.
-- [docs/SPACING_TOKENS.md](docs/SPACING_TOKENS.md) — explanation of spacing tokens and when to use each for layout and sizing.
 - [docs/DESIGN_TOKEN_MIGRATION.md](docs/DESIGN_TOKEN_MIGRATION.md) — step-by-step guide for safely renaming or deprecating a token, including a PR checklist.
 
 ## API Endpoints
@@ -984,23 +942,21 @@ To enable downstream operators, contracts, and frontend engineers to style the l
 - **CSS Variables**: Exposes `--skeleton-bg-start`, `--skeleton-bg-via`, and `--skeleton-bg-end` to customize the shimmer gradient colors.
 - **Classes & Attributes**: Every skeleton renders with specific selector hooks (e.g. `.loading-skeleton` / `data-loading-state="skeleton"`).
 
-For full details, selectors list, and examples, see the [Frontend Component States Guide](docs/COMPONENT_STATES.md).
+For full details, selectors list, and examples, see the [Frontend Component States Guide](docs/component-states.md).
 
 ## SEO & Social Sharing Preview
 
 RemitWise includes pre-configured Open Graph and Twitter Card metadata so that sharing the app link on platforms like Slack, Twitter, and Facebook renders a rich media preview.
 
 **Configuration File**:
-
 - Constants are maintained centrally in `lib/config/metadata.ts`.
 - Edit `METADATA_CONFIG` to customize default title, description, application URL, and image specs.
 
 **Metadata Fields**:
-
 - `metadataBase` resolves relative image/page URLs to absolute paths.
 - `openGraph` properties (`og:title`, `og:description`, `og:url`, `og:image`, `og:type`) are automatically rendered.
 - `twitter` properties (`twitter:card` set to `summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`) are included.
 
 **Assets**:
-
 - The default preview image is served from `public/og-image.jpg`.
+
