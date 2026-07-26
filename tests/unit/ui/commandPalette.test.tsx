@@ -10,6 +10,7 @@
  *  - ArrowDown on the last item wraps to index 0 (last → first)
  *  - ArrowUp on the first item wraps to the last index (first → last)
  *  - Mid-list navigation does not wrap
+ *  - Home/End jumps to first/last item
  *  - Enter executes the currently selected command
  *  - Escape closes the palette
  *  - Cmd/Ctrl+K opens the palette
@@ -17,6 +18,7 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, act } from "@testing-library/react";
+import { axe } from "jest-axe";
 
 // ---------------------------------------------------------------------------
 // Dependency mocks (must be declared before importing the component)
@@ -255,6 +257,175 @@ describe("CommandPalette – keyboard navigation wrapping", () => {
         expect(getSelectedIndex(container)).toBe(0);
       }
       // If the filter didn't narrow to 1, the property test still passes
+    });
+  });
+
+  describe("Home key navigation (jump to first)", () => {
+    it("home_key_jumps_to_first_item_from_middle_of_list", () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      // Navigate to middle of list
+      pressKey("ArrowDown");
+      pressKey("ArrowDown");
+      expect(getSelectedIndex(container)).toBe(2);
+
+      // Home should jump to first
+      pressKey("Home");
+      expect(getSelectedIndex(container)).toBe(0);
+    });
+
+    it("home_key_jumps_to_first_item_from_last_item", () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      // Count total items
+      const itemButtons = Array.from(
+        container.querySelectorAll<HTMLButtonElement>("button")
+      ).filter((b) => b.className.includes("rounded-lg") && b.className.includes("flex"));
+      const totalItems = itemButtons.length;
+
+      // Navigate to last item
+      for (let i = 0; i < totalItems - 1; i++) {
+        pressKey("ArrowDown");
+      }
+      expect(getSelectedIndex(container)).toBe(totalItems - 1);
+
+      // Home should jump to first
+      pressKey("Home");
+      expect(getSelectedIndex(container)).toBe(0);
+    });
+
+    it("home_key_on_first_item_stays_on_first_item", () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      // Already at index 0
+      expect(getSelectedIndex(container)).toBe(0);
+
+      pressKey("Home");
+      expect(getSelectedIndex(container)).toBe(0);
+    });
+  });
+
+  describe("End key navigation (jump to last)", () => {
+    it("end_key_jumps_to_last_item_from_first_item", () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      // At index 0
+      expect(getSelectedIndex(container)).toBe(0);
+
+      // Count total items
+      const itemButtons = Array.from(
+        container.querySelectorAll<HTMLButtonElement>("button")
+      ).filter((b) => b.className.includes("rounded-lg") && b.className.includes("flex"));
+      const totalItems = itemButtons.length;
+
+      // End should jump to last
+      pressKey("End");
+      expect(getSelectedIndex(container)).toBe(totalItems - 1);
+    });
+
+    it("end_key_jumps_to_last_item_from_middle_of_list", () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      // Navigate to middle
+      pressKey("ArrowDown");
+      pressKey("ArrowDown");
+      expect(getSelectedIndex(container)).toBe(2);
+
+      // Count total items
+      const itemButtons = Array.from(
+        container.querySelectorAll<HTMLButtonElement>("button")
+      ).filter((b) => b.className.includes("rounded-lg") && b.className.includes("flex"));
+      const totalItems = itemButtons.length;
+
+      // End should jump to last
+      pressKey("End");
+      expect(getSelectedIndex(container)).toBe(totalItems - 1);
+    });
+
+    it("end_key_on_last_item_stays_on_last_item", () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      // Count total items
+      const itemButtons = Array.from(
+        container.querySelectorAll<HTMLButtonElement>("button")
+      ).filter((b) => b.className.includes("rounded-lg") && b.className.includes("flex"));
+      const totalItems = itemButtons.length;
+
+      // Navigate to last item
+      for (let i = 0; i < totalItems - 1; i++) {
+        pressKey("ArrowDown");
+      }
+      expect(getSelectedIndex(container)).toBe(totalItems - 1);
+
+      // End on last item should stay at last
+      pressKey("End");
+      expect(getSelectedIndex(container)).toBe(totalItems - 1);
+    });
+  });
+
+  describe("Home and End combined with arrow keys", () => {
+    it("home_then_arrow_down_navigates_from_first", () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      // Navigate to middle
+      pressKey("ArrowDown");
+      pressKey("ArrowDown");
+      expect(getSelectedIndex(container)).toBe(2);
+
+      // Home to go to first
+      pressKey("Home");
+      expect(getSelectedIndex(container)).toBe(0);
+
+      // ArrowDown from first should go to second
+      pressKey("ArrowDown");
+      expect(getSelectedIndex(container)).toBe(1);
+    });
+
+    it("end_then_arrow_up_navigates_from_last", () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      // Count total items
+      const itemButtons = Array.from(
+        container.querySelectorAll<HTMLButtonElement>("button")
+      ).filter((b) => b.className.includes("rounded-lg") && b.className.includes("flex"));
+      const totalItems = itemButtons.length;
+
+      // Navigate to first (default)
+      expect(getSelectedIndex(container)).toBe(0);
+
+      // End to go to last
+      pressKey("End");
+      expect(getSelectedIndex(container)).toBe(totalItems - 1);
+
+      // ArrowUp from last should go to second-to-last
+      pressKey("ArrowUp");
+      expect(getSelectedIndex(container)).toBe(totalItems - 2);
+    });
+  });
+
+  describe("accessibility compliance", () => {
+    it("palette_has_no_axe_violations_when_open", async () => {
+      const { container } = render(<CommandPalette />);
+      openPalette();
+
+      const results = await axe(container);
+      expect(results).toHaveNoViolations();
+    });
+
+    it("palette_has_no_axe_violations_when_closed", async () => {
+      const { container } = render(<CommandPalette />);
+      // Palette is not rendered when closed, but test the container
+      const results = await axe(container);
+      // Should have no violations even when closed
+      expect(results).toHaveNoViolations();
     });
   });
 });

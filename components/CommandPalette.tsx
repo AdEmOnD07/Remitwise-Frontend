@@ -24,7 +24,7 @@ export default function CommandPalette() {
   const { t } = useClientTranslator();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const { items: recentCommandIds, addItem: addRecentCommandId } = useRecentItems<string>(
     RECENT_COMMANDS_STORAGE_KEY,
     5
@@ -153,6 +153,16 @@ export default function CommandPalette() {
         if (e.key === "ArrowUp") {
           e.preventDefault();
           setSelectedIndex((prev) => (prev - 1 + displayedCommands.length) % displayedCommands.length);
+        }
+        // Home to jump to first item
+        if (e.key === "Home") {
+          e.preventDefault();
+          setSelectedIndex(0);
+        }
+        // End to jump to last item
+        if (e.key === "End") {
+          e.preventDefault();
+          setSelectedIndex(displayedCommands.length - 1);
         }
         // Enter to execute
         if (e.key === "Enter" && displayedCommands[selectedIndex]) {
@@ -311,6 +321,11 @@ export default function CommandPalette() {
             <div className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">↑↓</kbd>
               <span>to navigate</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">Home</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">End</kbd>
+              <span>to jump</span>
             </div>
             <div className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">↵</kbd>
