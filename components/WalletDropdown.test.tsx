@@ -9,7 +9,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // Mock the useFocusTrap hook
-vi.mock('../src/lib/hooks/useFocusTrap', () => ({
+vi.mock('@/lib/hooks/useFocusTrap', () => ({
   useFocusTrap: vi.fn(() => ({ current: null })),
 }));
 

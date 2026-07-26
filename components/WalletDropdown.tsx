@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Copy, Wallet, User, Settings, LogOut, Loader2 } from 'lucide-react';
-import { useFocusTrap } from '../src/lib/hooks/useFocusTrap';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 import { useOnClickOutside } from '../lib/hooks/useOnClickOutside';
 
 interface WalletDropdownProps {
@@ -41,7 +41,6 @@ export default function WalletDropdown({
 }: WalletDropdownProps) {
   const [copied, setCopied] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // ── Reduced-motion detection ───────────────────────────────────────────────
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -56,30 +55,12 @@ export default function WalletDropdown({
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // ── Focus trap via shared hook ─────────────────────────────────────────────
-  // The hook handles:
-  //   • Tab wrapping within the container
-  //   • Escape key → onClose
-  //   • Click outside → onClose
-  //   • Saving & restoring the previously focused element (the trigger button)
-  //   • prefers-reduced-motion for focus-delay timing
-  const focusTrapRef = useFocusTrap({
+  const dropdownRef = useFocusTrap<HTMLDivElement>({
     isActive: isOpen,
     onEscape: onClose,
     onOverlayClick: onClose,
     restoreFocusOnClose: true,
   });
-
-  // Sync the hook's internal ref with our local dropdownRef so both point
-  // at the same DOM node.  The hook returns its ref typed as `void` (but
-  // actually `React.RefObject<HTMLDivElement>` at runtime via `as any`).
-  useEffect(() => {
-    if (focusTrapRef && typeof focusTrapRef === 'object' && 'current' in focusTrapRef) {
-      // Point the hook's ref to our dropdown DOM element
-      (focusTrapRef as React.MutableRefObject<HTMLDivElement | null>).current =
-        dropdownRef.current;
-    }
-  }, [focusTrapRef]);
 
   // ── Close on outside click (via shared useOnClickOutside hook) ────────────
   useOnClickOutside(dropdownRef, onClose, {

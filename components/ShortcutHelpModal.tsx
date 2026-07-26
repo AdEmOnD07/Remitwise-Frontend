@@ -3,7 +3,7 @@
 import React from "react";
 import { X, Keyboard } from "lucide-react";
 import { useShortcutHelp } from "@/lib/context/ShortcutHelpContext";
-import { useFocusTrap } from "@/src/lib/hooks/useFocusTrap";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 export default function ShortcutHelpModal() {
   const { isOpen, close } = useShortcutHelp();
