@@ -12,6 +12,7 @@ import { FamilySection } from "@/components/settings/FamilySection";
 import { PreferencesSection } from "@/components/settings/PreferencesSection";
 import PageHeadingLink from "@/components/PageHeadingLink";
 import { useSeo } from "@/lib/hooks/useSeo";
+import { useRovingTabIndex } from "@/lib/hooks/useRovingTabIndex";
 
 const SECTIONS = [
   { id: "profile",        labelKey: "settings.sections.profile",         icon: User    },
@@ -37,6 +38,47 @@ export default function SettingsPage() {
   const { t } = useClientTranslator();
   const [active, setActive] = useState<SectionId>("profile");
 
+  // ── Refs for roving tabindex containers ────────────────────────────────────
+  const desktopListRef = useRef<HTMLUListElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
+
+  // ── Roving tabindex for desktop sidebar (vertical) ────────────────────────
+  const {
+    setFocusedIndex: setDesktopFocusedIndex,
+    getTabIndex: getDesktopTabIndex,
+    handleKeyDown: handleDesktopKeyDown,
+  } = useRovingTabIndex({
+    orientation: "vertical",
+    itemCount: SECTIONS.length,
+    containerRef: desktopListRef,
+    itemSelector: "button",
+    initialIndex: 0,
+    onFocusChange: (index) => setActive(SECTIONS[index].id),
+  });
+
+  // ── Roving tabindex for mobile nav (horizontal) ───────────────────────────
+  const {
+    setFocusedIndex: setMobileFocusedIndex,
+    getTabIndex: getMobileTabIndex,
+    handleKeyDown: handleMobileKeyDown,
+  } = useRovingTabIndex({
+    orientation: "horizontal",
+    itemCount: SECTIONS.length,
+    containerRef: mobileNavRef,
+    itemSelector: "button",
+    initialIndex: 0,
+    onFocusChange: (index) => setActive(SECTIONS[index].id),
+  });
+
+  // Keep roving tabindex in sync when active changes from scroll-spy
+  useEffect(() => {
+    const idx = SECTIONS.findIndex((s) => s.id === active);
+    if (idx !== -1) {
+      setDesktopFocusedIndex(idx);
+      setMobileFocusedIndex(idx);
+    }
+  }, [active, setDesktopFocusedIndex, setMobileFocusedIndex]);
+
   // ── Scroll-spy: update active nav item based on visible section ────────────
   useScrollSpy(SECTION_IDS, (id) => setActive(id as SectionId), {
     rootMargin: "-20% 0px -60% 0px",
@@ -48,7 +90,6 @@ export default function SettingsPage() {
     const el = document.getElementById(id);
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
-    // Also update immediately for responsiveness
     setActive(id);
   };
 
@@ -64,15 +105,22 @@ export default function SettingsPage() {
           >
             {t("settings.page_title")}
           </PageHeadingLink>
-          {/* Mobile: horizontal scrollable nav pills */}
+          {/* Mobile: horizontal scrollable nav pills with roving tabindex */}
           <nav
-            className="ml-auto flex min-w-0 flex-1 gap-1 overflow-x-auto sm:hidden scrollbar-none"
+            ref={mobileNavRef}
             aria-label={t("settings.nav_aria_label")}
+            className="ml-auto flex min-w-0 flex-1 gap-1 overflow-x-auto sm:hidden scrollbar-none"
+            onKeyDown={handleMobileKeyDown}
           >
-            {SECTIONS.map(({ id, labelKey, icon: Icon }) => (
+            {SECTIONS.map(({ id, labelKey, icon: Icon }, i) => (
               <button
                 key={id}
-                onClick={() => scrollTo(id)}
+                tabIndex={getMobileTabIndex(i)}
+                onClick={() => {
+                  setMobileFocusedIndex(i);
+                  scrollTo(id);
+                }}
+                onFocus={() => setMobileFocusedIndex(i)}
                 aria-current={active === id ? "location" : undefined}
                 aria-label={t(labelKey)}
                 className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
@@ -81,7 +129,7 @@ export default function SettingsPage() {
                     : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
               >
-                <Icon size={13} strokeWidth={2} />
+                <Icon size={13} strokeWidth={2} aria-hidden="true" />
                 {t(labelKey)}
               </button>
             ))}
@@ -90,14 +138,23 @@ export default function SettingsPage() {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 lg:grid lg:grid-cols-[220px_1fr] lg:gap-10 lg:items-start">
-        {/* ── Desktop sidebar nav ── */}
+        {/* ── Desktop sidebar nav with roving tabindex ── */}
         <aside className="hidden lg:block sticky top-20 self-start">
           <nav aria-label={t("settings.nav_aria_label")}>
-            <ul className="space-y-0.5">
-              {SECTIONS.map(({ id, labelKey, icon: Icon }) => (
+            <ul
+              ref={desktopListRef}
+              className="space-y-0.5"
+              onKeyDown={handleDesktopKeyDown}
+            >
+              {SECTIONS.map(({ id, labelKey, icon: Icon }, i) => (
                 <li key={id}>
                   <button
-                    onClick={() => scrollTo(id)}
+                    tabIndex={getDesktopTabIndex(i)}
+                    onClick={() => {
+                      setDesktopFocusedIndex(i);
+                      scrollTo(id);
+                    }}
+                    onFocus={() => setDesktopFocusedIndex(i)}
                     aria-current={active === id ? "location" : undefined}
                     aria-label={t(labelKey)}
                     className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 text-left ${
@@ -109,6 +166,7 @@ export default function SettingsPage() {
                     <Icon
                       size={16}
                       strokeWidth={active === id ? 2 : 1.8}
+                      aria-hidden="true"
                       className={
                         active === id
                           ? "text-indigo-600 dark:text-indigo-400"
