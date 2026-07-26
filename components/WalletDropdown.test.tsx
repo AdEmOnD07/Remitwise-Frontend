@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -150,6 +150,41 @@ describe('WalletDropdown', () => {
       menuItems[0].focus();
       fireEvent.keyDown(document, { key: 'End' });
       expect(document.activeElement).toBe(menuItems[menuItems.length - 1]);
+    });
+
+    it('moves focus to first item with PageUp key', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[2].focus();
+      fireEvent.keyDown(document, { key: 'PageUp' });
+      expect(document.activeElement).toBe(menuItems[0]);
+    });
+
+    it('moves focus to last item with PageDown key', () => {
+      render(<WalletDropdown {...defaultProps} />);
+      const menuItems = screen.getAllByRole('menuitem');
+
+      menuItems[0].focus();
+      fireEvent.keyDown(document, { key: 'PageDown' });
+      expect(document.activeElement).toBe(menuItems[menuItems.length - 1]);
+    });
+
+    it('sad path: handles cases where there are no focusable elements without error', () => {
+      const { container } = render(
+        <WalletDropdown {...defaultProps} />
+      );
+
+      const menu = screen.getByRole('menu');
+      const querySpy = vi.spyOn(menu, 'querySelectorAll').mockReturnValue(
+        Object.assign([], { length: 0 }) as any
+      );
+
+      expect(() => {
+        fireEvent.keyDown(document, { key: 'ArrowDown' });
+      }).not.toThrow();
+
+      querySpy.mockRestore();
     });
   });
 

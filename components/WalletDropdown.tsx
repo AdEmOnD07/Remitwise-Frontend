@@ -69,14 +69,21 @@ export default function WalletDropdown({
   });
 
   // ── Arrow-key navigation (WAI-ARIA menu pattern) ───────────────────────────
-  const handleArrowKeys = useCallback(
+  const handleKeyboardNavigation = useCallback(
     (event: KeyboardEvent) => {
       if (!dropdownRef.current) return;
-      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Home' && event.key !== 'End') {
+      if (
+        event.key !== 'ArrowDown' &&
+        event.key !== 'ArrowUp' &&
+        event.key !== 'Home' &&
+        event.key !== 'End' &&
+        event.key !== 'PageDown' &&
+        event.key !== 'PageUp' &&
+        event.key !== 'Enter'
+      ) {
         return;
       }
 
-      event.preventDefault();
       const items = Array.from(
         dropdownRef.current.querySelectorAll<HTMLElement>(MENUITEM_SELECTOR),
       );
@@ -87,17 +94,29 @@ export default function WalletDropdown({
       let nextIndex: number;
       switch (event.key) {
         case 'ArrowDown':
+          event.preventDefault();
           nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
           break;
         case 'ArrowUp':
+          event.preventDefault();
           nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
           break;
         case 'Home':
+        case 'PageUp':
+          event.preventDefault();
           nextIndex = 0;
           break;
         case 'End':
+        case 'PageDown':
+          event.preventDefault();
           nextIndex = items.length - 1;
           break;
+        case 'Enter':
+          if (currentIndex !== -1) {
+            event.preventDefault();
+            items[currentIndex].click();
+          }
+          return;
         default:
           return;
       }
@@ -109,9 +128,9 @@ export default function WalletDropdown({
 
   useEffect(() => {
     if (!isOpen) return;
-    document.addEventListener('keydown', handleArrowKeys);
-    return () => document.removeEventListener('keydown', handleArrowKeys);
-  }, [isOpen, handleArrowKeys]);
+    document.addEventListener('keydown', handleKeyboardNavigation);
+    return () => document.removeEventListener('keydown', handleKeyboardNavigation);
+  }, [isOpen, handleKeyboardNavigation]);
 
   // ── Initial focus ──────────────────────────────────────────────────────────
   useEffect(() => {
