@@ -236,6 +236,8 @@ export function DashboardLayout() {
 
 To prevent layout shifts and provide a premium user experience, RemitWise uses route-level skeleton screens instead of generic spinners for major layout sections. Inline loading spinners are reserved for form submit action buttons.
 
+For guidance on when to use `loading.tsx`, `React.Suspense`, and when to keep explicit manual fetch state, see [docs/SUSPENSE.md](./SUSPENSE.md).
+
 ### 6.1 Skeleton Screen Components
 Located in [`components/ui/Skeleton.tsx`](../components/ui/Skeleton.tsx), the `Skeleton` components animate using a shimmer effect.
 
