@@ -102,6 +102,39 @@ describe("TransactionsPage Export Component Integration", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
+  it("keeps ascending date sort when a type filter changes", () => {
+    renderComponent();
+
+    const dateSort = screen.getByRole("button", { name: /date descending/i });
+    fireEvent.click(dateSort);
+    expect(screen.getByRole("button", { name: /date ascending/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Split" }));
+
+    const firstSplit = screen.getByText("#TX010");
+    const secondSplit = screen.getByText("#TX002");
+    expect(firstSplit.compareDocumentPosition(secondSplit)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+
+  it("keeps descending amount sort when a status filter changes", () => {
+    renderComponent();
+
+    const amountSort = screen.getByRole("button", { name: /^amount$/i });
+    fireEvent.click(amountSort);
+    fireEvent.click(screen.getByRole("button", { name: /amount ascending/i }));
+    expect(screen.getByRole("button", { name: /amount descending/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Completed" }));
+
+    const received = screen.getByText("#TX007");
+    const insurance = screen.getByText("#TX004");
+    expect(received.compareDocumentPosition(insurance)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+
   it("closes dropdown when Escape key is pressed", () => {
     renderComponent();
     const exportButton = screen.getByRole("button", {
