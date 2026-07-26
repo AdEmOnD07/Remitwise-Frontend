@@ -126,3 +126,25 @@ useEventListener("click", () => {
 ```
 
 The hook is safe to use in server-rendered components. It also keeps the latest handler without requiring callers to manually register and clean up listeners.
+
+## `useElementSize`
+
+**File:** `lib/hooks/useElementSize.ts`
+
+`useElementSize` reports the size of an element and tracks its changes using `ResizeObserver`.
+
+```tsx
+import { useElementSize } from "@/lib/hooks/useElementSize";
+
+function ResponsiveWidget() {
+  const { ref, width, height } = useElementSize<HTMLDivElement>();
+
+  return (
+    <div ref={ref}>
+      The element is {width}px wide and {height}px tall.
+    </div>
+  );
+}
+```
+
+You can also pass an existing React ref or an element directly.
