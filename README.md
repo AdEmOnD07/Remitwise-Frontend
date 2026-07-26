@@ -13,7 +13,8 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 - [Scroll isolation guide (contributors)](./docs/SCROLL_ISOLATION.md)
 - [Period lifecycle and state machine](./docs/PERIOD_LIFECYCLE.md)
 - [Internal jargon glossary (contributors)](./docs/GLOSSARY.md)
-- [Resize handling patterns for contributors](./docs/RESIZE_HANDLING.md)
+- [Button Variants and semantic usage](./docs/BUTTON_VARIANTS.md)
+- [ARIA Live Regions (Accessibility)](./docs/ARIA_LIVE_REGIONS.md)
 
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
