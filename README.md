@@ -736,6 +736,7 @@ GET  /api/admin/audit         # Admin-only audit events
 - UI uses a blue/indigo color scheme
 - Responsive design with mobile-first approach
 - Motion vocabulary and standard animations are documented in [docs/MOTION.md](docs/MOTION.md).
+- Window and container resize handling patterns are documented in [docs/RESIZE_HANDLING.md](docs/RESIZE_HANDLING.md).
 - Components are structured for easy integration
 
 Design token reference and migration guides:
