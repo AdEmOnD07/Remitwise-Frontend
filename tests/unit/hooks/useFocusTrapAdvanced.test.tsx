@@ -24,7 +24,7 @@ import { render, act } from "@testing-library/react";
 // Import the advanced hook from src/
 // We use a relative path because the src/ tree is not covered by the @/ alias.
 // ---------------------------------------------------------------------------
-import useFocusTrap from "../../../src/lib/hooks/useFocusTrap";
+import useFocusTrap from "@/lib/hooks/useFocusTrap";
 
 // ---------------------------------------------------------------------------
 // Helpers
