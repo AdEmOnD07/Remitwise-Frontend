@@ -741,6 +741,7 @@ GET  /api/admin/audit         # Admin-only audit events
 Design token reference and migration guides:
 
 - [docs/THEMING.md](docs/THEMING.md) — full catalogue of CSS custom properties, Tailwind color, spacing, focus-ring, and animation tokens with semantic roles and usage examples.
+- [docs/SPACING_TOKENS.md](docs/SPACING_TOKENS.md) — explanation of spacing tokens and when to use each for layout and sizing.
 - [docs/DESIGN_TOKEN_MIGRATION.md](docs/DESIGN_TOKEN_MIGRATION.md) — step-by-step guide for safely renaming or deprecating a token, including a PR checklist.
 
 ## API Endpoints
