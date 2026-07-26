@@ -98,24 +98,23 @@ export default function AsyncOperationsPanel({
 	footer,
 }: AsyncOperationsPanelProps) {
 	const { state } = useAsyncOperations();
-	const [expanded, setExpanded] = useState(() => {
-		if (typeof window !== 'undefined') {
-			try {
-				return sessionStorage.getItem('asyncPanelExpanded') === 'true';
-			} catch (e) {
-				return false;
-			}
-		}
-		return false;
-	});
+	const [expanded, setExpanded] = useState(false);
 	const [openIndex, setOpenIndex] = useState<number | null>(null);
 
+	// Sync from sessionStorage on mount to prevent hydration mismatch
 	useEffect(() => {
-		if (typeof window !== 'undefined') {
-			try {
-				sessionStorage.setItem('asyncPanelExpanded', String(expanded));
-			} catch (e) {}
-		}
+		try {
+			if (sessionStorage.getItem('asyncPanelExpanded') === 'true') {
+				setExpanded(true);
+			}
+		} catch {}
+	}, []);
+
+	// Sync to sessionStorage on change
+	useEffect(() => {
+		try {
+			sessionStorage.setItem('asyncPanelExpanded', String(expanded));
+		} catch {}
 	}, [expanded]);
 
 	const queueItems = useMemo(() => {
