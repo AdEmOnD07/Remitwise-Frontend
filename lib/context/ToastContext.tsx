@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useRef, useState } from "react";
+import { TOAST_TIMEOUT_MS } from "@/lib/config/toast";
 
 export type ToastVariant = "success" | "error" | "warning" | "info";
 
@@ -24,7 +25,7 @@ export interface Toast {
   title: string;
   description?: string;
   action?: ToastAction;
-  /** Auto-dismiss delay in ms. Pass 0 to require manual dismissal. Default: 5000. */
+  /** Auto-dismiss delay in ms. Pass 0 to require manual dismissal. Default uses config (5000). */
   duration?: number;
   /** Diagnostic details shown in disclosure (error variant only) */
   diagnostics?: DiagnosticDetails;
@@ -44,7 +45,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const toast = useCallback((options: Omit<Toast, "id">): string => {
     const id = `toast-${++counterRef.current}`;
-    const duration = options.duration ?? (options.action ? 0 : 5000);
+    const duration = options.duration ?? (options.action ? 0 : TOAST_TIMEOUT_MS);
     setToasts((prev) => {
       const next = [...prev, { ...options, id, duration }];
       return next.length > 3 ? next.slice(-3) : next;

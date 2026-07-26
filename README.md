@@ -76,6 +76,9 @@ The application requires connection to a Soroban RPC node.
 - **Testnet:** `https://soroban-testnet.stellar.org` (Passphrase: `Test SDF Network ; September 2015`)
 - **Mainnet:** `https://soroban-rpc.stellar.org` (Passphrase: `Public Global Stellar Network ; September 2015`)
 
+**Frontend Configurations:**
+- `NEXT_PUBLIC_TOAST_TIMEOUT`: Auto-dismiss timeout for toasts in milliseconds. Default is `5000`. Pass `0` to require manual dismissal.
+
 ### Prerequisites
 
 - Node.js 18+
