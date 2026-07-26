@@ -13,7 +13,7 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 - [Scroll isolation guide (contributors)](./docs/SCROLL_ISOLATION.md)
 - [Period lifecycle and state machine](./docs/PERIOD_LIFECYCLE.md)
 - [Internal jargon glossary (contributors)](./docs/GLOSSARY.md)
-- [Image handling guide](./docs/IMAGE_HANDLING.md)
+- [Where emojis are allowed in UI copy (contributors)](./docs/EMOJIS_IN_UI.md)
 
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
