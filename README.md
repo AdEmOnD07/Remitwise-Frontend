@@ -758,6 +758,7 @@ GET  /api/admin/audit         # Admin-only audit events
 - UI uses a blue/indigo color scheme
 - Responsive design with mobile-first approach
 - Motion vocabulary and standard animations are documented in [docs/MOTION.md](docs/MOTION.md).
+- Standard error copy tone and layout patterns for contributors are documented in [docs/UX_ERROR_STATES.md](docs/UX_ERROR_STATES.md).
 - Components are structured for easy integration
 
 Design token reference and migration guides:
