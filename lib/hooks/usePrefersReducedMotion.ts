@@ -27,6 +27,13 @@ export function usePrefersReducedMotion(): boolean {
 
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+    // Some environments expose `matchMedia` as a function but have it
+    // return a falsy value (e.g. restricted embeds, certain test/SSR
+    // shims). Guard here too, not just on `typeof window.matchMedia`.
+    if (!mediaQuery) {
+      return;
+    }
+
     const updatePreference = () => {
       setPrefersReducedMotion(mediaQuery.matches);
     };

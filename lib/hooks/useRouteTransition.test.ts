@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { useRouteTransition } from "./useRouteTransition";
 
 function makeMql(initialMatches: boolean) {
@@ -152,5 +152,29 @@ describe("useRouteTransition", () => {
       );
       expect(result.current.animationClasses).toContain(`duration-${dur}`);
     }
+  });
+  it("updates animation classes when prefers-reduced-motion changes", () => {
+    const { result } = renderHook(() => useRouteTransition());
+
+    expect(result.current.prefersReducedMotion).toBe(false);
+    expect(result.current.animationClasses).toBe(
+      "animate-in fade-in slide-in-from-left-4 duration-300",
+    );
+
+    act(() => {
+      mql.dispatchChange(true);
+    });
+
+    expect(result.current.prefersReducedMotion).toBe(true);
+    expect(result.current.animationClasses).toBe("");
+
+    act(() => {
+      mql.dispatchChange(false);
+    });
+
+    expect(result.current.prefersReducedMotion).toBe(false);
+    expect(result.current.animationClasses).toBe(
+      "animate-in fade-in slide-in-from-left-4 duration-300",
+    );
   });
 });
