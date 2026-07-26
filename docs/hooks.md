@@ -1,32 +1,35 @@
-## `useVisibilityChange`
+# Hooks
 
-Fires callbacks when the active browser tab transitions between visible and hidden states.
+## `useEventListener`
 
-### Usage
+**File:** `lib/hooks/useEventListener.ts`
+
+`useEventListener` provides a single place to register DOM event listeners from a React component. The listener is automatically removed when the component unmounts or when its event target, event name, or options change.
+
+The event name determines the event type at compile time:
 
 ```tsx
-import { useVisibilityChange } from "@/lib/hooks/useVisibilityChange";
+import { useEventListener } from "@/lib/hooks/useEventListener";
 
-export function ActiveDataFetcher() {
-  const isVisible = useVisibilityChange({
-    onVisible: () => {
-      // Re-fetch live data when user returns to tab
-      refetch();
-    },
-    onHidden: () => {
-      // Pause active polling timers
-      pausePolling();
-    },
-    onChange: (visible) => {
-      console.log("Tab visibility changed to:", visible);
-    },
+function EscapeHandler({ onEscape }: { onEscape: () => void }) {
+  useEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      onEscape();
+    }
   });
 
-  return <div>Tab active: {isVisible ? "Yes" : "No"}</div>;
+  return null;
 }
+```
 
-## `useScrollSpy`
+The default target is `window`. A `Document`, `HTMLElement`, or React ref can be supplied when listening elsewhere:
 
-Observes multiple section elements and calls a callback with the id of the most-visible section. Backed by a single `IntersectionObserver` instance that is disconnected on unmount.
+```tsx
+const buttonRef = useRef<HTMLButtonElement>(null);
 
-See [`docs/HOOKS.md`](./HOOKS.md) for full API reference and usage examples.
+useEventListener("click", () => {
+  // Handle clicks on the button.
+}, buttonRef);
+```
+
+The hook is safe to use in server-rendered components. It also keeps the latest handler without requiring callers to manually register and clean up listeners.
