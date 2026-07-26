@@ -25,6 +25,7 @@ class MockIntersectionObserver {
       this as unknown as IntersectionObserver,
     );
   }
+
 }
 
 interface HarnessProps {
@@ -134,5 +135,141 @@ describe('useInfiniteScrollObserver', () => {
     unmount();
 
     expect(instance.disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('disconnects_observer_when_hasMore_changes_to_false', () => {
+    const { rerender } = render(
+      <Harness hasMore loading={false} onLoadMore={vi.fn()} />,
+    );
+
+    // After the initial render cycle the *last* entry in instances is
+    // the currently active observer. (usePrefersReducedMotion may have
+    // triggered one cleanup cycle before it resolves, so we always
+    // assert against the most recent instance.)
+    const activeIdx = MockIntersectionObserver.instances.length - 1;
+    const activeBefore = MockIntersectionObserver.instances[activeIdx];
+    expect(activeBefore).toBeDefined();
+
+    // Flip hasMore to false — the effect cleanup should disconnect the
+    // currently active observer.
+    rerender(<Harness hasMore={false} loading={false} onLoadMore={vi.fn()} />);
+
+    // The observer that was active before the dependency change must now
+    // be disconnected. We assert it *was* called at least once rather
+    // than pin an exact count because usePrefersReducedMotion may have
+    // already triggered a cleanup cycle during mount.
+    expect(activeBefore.disconnect).toHaveBeenCalled();
+  });
+
+  it('disconnects_observer_when_loading_changes_to_true', () => {
+    const { rerender } = render(
+      <Harness hasMore loading={false} onLoadMore={vi.fn()} />,
+    );
+
+    const activeIdx = MockIntersectionObserver.instances.length - 1;
+    const activeBefore = MockIntersectionObserver.instances[activeIdx];
+    expect(activeBefore).toBeDefined();
+
+    // Flip loading to true — effect cleanup should disconnect the observer.
+    rerender(<Harness hasMore loading onLoadMore={vi.fn()} />);
+
+    expect(activeBefore.disconnect).toHaveBeenCalled();
+  });
+
+  it('disconnects_old_observer_when_onLoadMore_reference_changes', () => {
+    const firstCallback = vi.fn();
+    const { rerender } = render(
+      <Harness hasMore loading={false} onLoadMore={firstCallback} />,
+    );
+
+    // Take the last (currently active) observer.
+    const activeIdx = MockIntersectionObserver.instances.length - 1;
+    const oldObserver = MockIntersectionObserver.instances[activeIdx];
+    expect(oldObserver).toBeDefined();
+
+    // Passing a new onLoadMore reference triggers the effect to re-run.
+    rerender(<Harness hasMore loading={false} onLoadMore={vi.fn()} />);
+
+    // The observer that was active before the reference change should
+    // now be disconnected.
+    expect(oldObserver.disconnect).toHaveBeenCalled();
+  });
+
+  it('does_not_leak_observers_across_multiple_rerenders', () => {
+    const { rerender } = render(
+      <Harness hasMore loading={false} onLoadMore={vi.fn()} />,
+    );
+
+    // Simulate several re-renders — each passes a fresh onLoadMore so the
+    // effect re-runs and creates a new observer.
+    for (let i = 0; i < 5; i++) {
+      rerender(<Harness hasMore loading={false} onLoadMore={vi.fn()} />);
+    }
+
+    const instances = MockIntersectionObserver.instances;
+
+    // Every observer from a previous render cycle must have been
+    // disconnected. Only the very last one may still be active.
+    for (let i = 0; i < instances.length; i++) {
+      if (i < instances.length - 1) {
+        expect(instances[i].disconnect).toHaveBeenCalled();
+      }
+    }
+
+  });
+
+  it('disconnects_all_observers_on_final_unmount_after_multiple_rerenders', () => {
+    const { rerender, unmount } = render(
+      <Harness hasMore loading={false} onLoadMore={vi.fn()} />,
+    );
+
+    // Simulate several re-renders.
+    for (let i = 0; i < 3; i++) {
+      rerender(<Harness hasMore loading={false} onLoadMore={vi.fn()} />);
+    }
+
+    // Snapshot all instances before unmount.
+    const instances = [...MockIntersectionObserver.instances];
+
+    unmount();
+
+    // Every single instance — including those from stale effect cycles —
+    // must be disconnected after the component unmounts.
+    for (const inst of instances) {
+      expect(inst.disconnect).toHaveBeenCalled();
+    }
+  });
+
+  it('handles_multiple_independent_hook_instances', () => {
+    function MultiHarness() {
+      const { sentinelRef: ref1 } = useInfiniteScrollObserver({
+        hasMore: true,
+        loading: false,
+        onLoadMore: vi.fn(),
+      });
+      const { sentinelRef: ref2 } = useInfiniteScrollObserver({
+        hasMore: true,
+        loading: false,
+        onLoadMore: vi.fn(),
+      });
+      return (
+        <div>
+          <div data-testid="sentinel-a" ref={ref1} />
+          <div data-testid="sentinel-b" ref={ref2} />
+        </div>
+      );
+    }
+
+    const { unmount } = render(<MultiHarness />);
+    expect(MockIntersectionObserver.instances).toHaveLength(2);
+
+    const instA = MockIntersectionObserver.instances[0];
+    const instB = MockIntersectionObserver.instances[1];
+
+    unmount();
+
+    // Both instances must be disconnected after unmount — no leaks.
+    expect(instA.disconnect).toHaveBeenCalled();
+    expect(instB.disconnect).toHaveBeenCalled();
   });
 });
