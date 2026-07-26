@@ -445,3 +445,63 @@ Applied to:
 4. **Focus-based:** Shows on both hover and focus to ensure keyboard users discover shortcuts without needing to read documentation.
 
 5. **Escape dismissal:** Allows keyboard users to close tooltips without moving focus away from the trigger.
+
+---
+
+## LiveRegion
+
+Central primitive for wrapping ARIA live-region semantics (`role`, `aria-live`,
+`aria-atomic`). Use as the base for any component that announces status
+changes to assistive technology, instead of hand-rolling these three
+attributes — a pattern that previously led to inconsistent (and in places
+missing) `aria-atomic` across the codebase.
+
+**File:** `components/ui/LiveRegion.tsx`
+
+### Props
+
+| Prop | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `politeness` | `"polite" \| "assertive"` | — | `"polite"` | Maps to `role="status"`/`aria-live="polite"` or `role="alert"`/`aria-live="assertive"`. |
+| `atomic` | `boolean` | — | `true` | Sets `aria-atomic`. Keep `true` unless you have a specific reason to announce only the changed sub-node. |
+| `visuallyHidden` | `boolean` | — | `false` | When `true`, applies `sr-only` — use for announcements with no persistent visible UI. |
+| `className` | `string` | — | `""` | Extra classes on the wrapper. |
+| `children` | `React.ReactNode` | ✓ | — | Content to announce. |
+
+### Accessibility
+
+- `role` is derived from `politeness`: `"status"` (polite) or `"alert"` (assertive) — matching the convention already used in `Notice.tsx`.
+- `aria-atomic` defaults to `true` so the full region is announced as a unit on any change.
+- Does not manage focus — assertive announcements do not steal focus; use a modal/dialog pattern separately if the situation requires interrupting the user's task.
+
+### Usage examples
+
+```tsx
+import LiveRegion from "@/components/ui/LiveRegion";
+
+// Visible status card (polite, atomic — the defaults)
+<LiveRegion className="rounded-2xl border p-4">
+  <p>Transfer submitted.</p>
+</LiveRegion>
+
+// Urgent, interrupting announcement
+<LiveRegion politeness="assertive">
+  <p>Connection lost. Retrying…</p>
+</LiveRegion>
+
+// Invisible announcer (no persistent visible element)
+<LiveRegion visuallyHidden>
+  {resultCount} results loaded.
+</LiveRegion>
+```
+
+### Integration
+
+Import directly — no context provider required.
+
+```tsx
+import LiveRegion from "@/components/ui/LiveRegion";
+```
+
+`components/AsyncSubmissionStatus.tsx` uses this internally as its live-region
+wrapper as of #1149.
