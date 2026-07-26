@@ -11,6 +11,7 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 - [Prisma data model and durability boundary](./docs/data-model.md)
 - [Elevation and shadow guidance](./docs/ELEVATION.md)
 - [Dashboard layout rules for contributors](./docs/DASHBOARD_LAYOUT_RULES.md)
+- [Figma handoff workflow for contributors](./docs/FIGMA_HANDOFF.md)
 - [Period lifecycle and state machine](./docs/PERIOD_LIFECYCLE.md)
 - [Internal jargon glossary (contributors)](./docs/GLOSSARY.md)
 - [Hydration mismatch patterns and fixes](./docs/HYDRATION_MISMATCH.md)
