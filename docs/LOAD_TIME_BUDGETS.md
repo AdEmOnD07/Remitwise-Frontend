@@ -176,9 +176,9 @@ This executes `tests/e2e/dashboard-performance.spec.ts`. To add similar tests fo
 
 ### 2. Build-time bundle size check
 
-The `npm run build` step produces a production bundle. While there is no automated size-limit gate yet, contributors should review the build output for unexpected bundle size increases. If a route's JavaScript chunk grows by more than 10% after a change, investigate and optimise before merging.
+The `npm run build` step produces a production bundle. While there is no automated size-limit gate yet, contributors should review the build output for unexpected bundle size increases. If a route's JavaScript chunk grows by more than 10% after a change, investigate and optimise before merging. Use `@next/bundle-analyzer` to analyze and inspect chunk details (see the [Bundle Analysis Guide](./BUNDLE_ANALYSIS.md) for usage instructions).
 
-Future enhancement: integrate `size-limit` or `@next/bundle-analyzer` for automated bundle budget enforcement.
+Future enhancement: integrate `size-limit` or automate budget checks in CI.
 
 ### 3. Runtime monitoring (operators)
 
@@ -270,6 +270,7 @@ Register the new test in the `test:perf` script in `package.json`:
 
 | Document | Relevance |
 |----------|-----------|
+| [BUNDLE_ANALYSIS.md](./BUNDLE_ANALYSIS.md) | How to run and interpret bundle size analyses |
 | [frame-budget-rules.md](./frame-budget-rules.md) | Interactive handler budgets (scroll ≤ 16 ms, click ≤ 100 ms) |
 | [metrics-logging.md](./metrics-logging.md) | Structured JSON log format and `durationMs` field |
 | [infrastructure.md](./infrastructure.md) | Request gateway, rate limiting, and middleware flow |
