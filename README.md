@@ -43,6 +43,8 @@ Dashboard, Bills, and Insights now use route-level skeleton screens built from `
 
 Every page route has a per-route load-time budget based on its user impact tier. These budgets are enforced in CI via Lighthouse E2E tests and monitored in production through structured request logs. For the full route-to-budget map, measurement approach, and how to add budgets for new routes, see [docs/LOAD_TIME_BUDGETS.md](docs/LOAD_TIME_BUDGETS.md).
 
+When a budget fails, capture a Chrome trace to pinpoint the regression. The step-by-step capture and analysis guide is in [docs/PERFORMANCE_TRACING.md](docs/PERFORMANCE_TRACING.md).
+
 ## Sentry
 
 Sentry is wired through the client, server, and edge config files with separate environment variables for each runtime:
