@@ -3,6 +3,8 @@
 Frontend application for the RemitWise remittance and financial planning platform.
 
 > **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map.
+>
+> For React performance habits (memoization boundaries, key selectors, event delegation) see [docs/performance-patterns.md](docs/performance-patterns.md).
 
 ## Overview
 
