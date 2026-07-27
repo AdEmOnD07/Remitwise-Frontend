@@ -4,19 +4,6 @@
     "network": "Error de conexión de red. Compruebe su conexión.",
     "unauthorized": "Sesión expirada. Por favor, inicie sesión de nuevo."
   },
-  "contractErrors": {
-    "generic": "Falló la ejecución del contrato. Por favor, inténtelo de nuevo.",
-    "invalidInput": "Entrada inválida proporcionada.",
-    "invalidAmount": "Monto del contrato inválido.",
-    "invalidRecipient": "Destinatario del contrato inválido.",
-    "unauthorized": "Acceso no autorizado al contrato.",
-    "forbidden": "Acción prohibida por el contrato.",
-    "notFound": "Recurso del contrato no encontrado.",
-    "executionFailed": "Falló la ejecución del contrato.",
-    "contractExecError": "Falló la ejecución del contrato.",
-    "systemError": "Error interno del sistema.",
-    "limitExceeded": "Límite de operación del contrato excedido."
-  },
   "transactionHistory": {
     "title": "Historial de Transacciones",
     "empty": "No se encontraron transacciones",
@@ -24,35 +11,11 @@
     "status": "Estado",
     "date": "Fecha"
   },
-  "transactionStatus": {
-    "pending": {
-      "label": "Confirmando",
-      "emphasis": "Esperando la confirmación de la red"
-    },
-    "confirmed": {
-      "label": "Confirmada",
-      "emphasis": "Liquidada en la red Stellar"
-    },
-    "failed": {
-      "label": "Fallida",
-      "emphasis": "La transacción no se completó"
-    },
-    "unknown": {
-      "label": "Estado desconocido",
-      "emphasis": "Aún sin confirmar — revise el explorador"
-    }
-  },
   "dashboard": {
     "totalSent": "Total Enviado",
     "savings": "Ahorros",
     "billsPaid": "Facturas Pagadas",
-    "insurance": "Seguro",
-    "transfers": "{{count}} transferencias",
-    "goals": "{{count}} metas",
-    "billsCount": "{{count}} pagadas",
-    "policies": "{{count}} pólizas",
-    "loadError": "No pudimos cargar el resumen de tu panel.",
-    "unavailable": "—"
+    "insurance": "Seguro"
   },
   "quickActions": {
     "emergencyTransfer": "Transferencia de Emergencia",
@@ -60,9 +23,5 @@
     "goals": "Metas",
     "bills": "Facturas",
     "urgentBadge": "URGENTE"
-  },
-  "charts": {
-    "imageLabel": "{{title}}: {{summary}}",
-    "noData": "No hay datos disponibles."
   }
 }

@@ -4,19 +4,6 @@
     "network": "Network connection error. Check your connection.",
     "unauthorized": "Session expired. Please log in again."
   },
-  "contractErrors": {
-    "generic": "Contract execution failed. Please try again.",
-    "invalidInput": "Invalid input provided.",
-    "invalidAmount": "Invalid contract amount.",
-    "invalidRecipient": "Invalid contract recipient.",
-    "unauthorized": "Unauthorized access to contract.",
-    "forbidden": "Action forbidden by contract.",
-    "notFound": "Contract resource not found.",
-    "executionFailed": "Contract execution failed.",
-    "contractExecError": "Contract execution failed.",
-    "systemError": "Internal system error.",
-    "limitExceeded": "Contract operation limit exceeded."
-  },
   "transactionHistory": {
     "title": "Transaction History",
     "empty": "No transactions found",
@@ -24,35 +11,11 @@
     "status": "Status",
     "date": "Date"
   },
-  "transactionStatus": {
-    "pending": {
-      "label": "Confirming",
-      "emphasis": "Waiting for network confirmation"
-    },
-    "confirmed": {
-      "label": "Confirmed",
-      "emphasis": "Settled on the Stellar network"
-    },
-    "failed": {
-      "label": "Failed",
-      "emphasis": "The transaction did not go through"
-    },
-    "unknown": {
-      "label": "Status unknown",
-      "emphasis": "Still unconfirmed — check the explorer"
-    }
-  },
   "dashboard": {
     "totalSent": "Total Sent",
     "savings": "Savings",
     "billsPaid": "Bills Paid",
-    "insurance": "Insurance",
-    "transfers": "{{count}} transfers",
-    "goals": "{{count}} goals",
-    "billsCount": "{{count}} paid",
-    "policies": "{{count}} policies",
-    "loadError": "We couldn't load your dashboard summary.",
-    "unavailable": "—"
+    "insurance": "Insurance"
   },
   "quickActions": {
     "emergencyTransfer": "Emergency Transfer",
@@ -60,9 +23,5 @@
     "goals": "Goals",
     "bills": "Bills",
     "urgentBadge": "URGENT"
-  },
-  "charts": {
-    "imageLabel": "{{title}}: {{summary}}",
-    "noData": "No data available."
   }
 }
