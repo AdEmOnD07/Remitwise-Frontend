@@ -2,7 +2,7 @@
 
 Frontend application for the RemitWise remittance and financial planning platform.
 
-> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers. For data fetching and caching patterns, see [docs/CACHE_STRATEGY.md](docs/CACHE_STRATEGY.md).
+> **New contributors:** start with [CONTRIBUTING.md](CONTRIBUTING.md) for branch conventions, verified test commands, and PR expectations, then read [docs/architecture.md](docs/architecture.md) for a full route and layer map, and [docs/infrastructure.md](docs/infrastructure.md) for request gateway, logging, and runtime layers. For data fetching and caching patterns, see [docs/CACHE_STRATEGY.md](docs/CACHE_STRATEGY.md). For SSR vs. client-only patterns, see [docs/SSR_PATTERNS.md](docs/SSR_PATTERNS.md).
 
 ## Overview
 
@@ -10,8 +10,12 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 
 - [Prisma data model and durability boundary](./docs/data-model.md)
 - [Elevation and shadow guidance](./docs/ELEVATION.md)
+- [Dashboard layout rules for contributors](./docs/DASHBOARD_LAYOUT_RULES.md)
+- [Figma handoff workflow for contributors](./docs/FIGMA_HANDOFF.md)
+- [Focus trap guide for contributors](./docs/FOCUS_TRAPS.md)
 - [Period lifecycle and state machine](./docs/PERIOD_LIFECYCLE.md)
 - [Internal jargon glossary (contributors)](./docs/GLOSSARY.md)
+- [Hydration mismatch patterns and fixes](./docs/HYDRATION_MISMATCH.md)
 
 - **Next.js 14** - React framework with App Router
 - **TypeScript** - Type safety
@@ -19,15 +23,19 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 - **Lucide React** - Icon library — see [docs/ICON_SYSTEM.md](docs/ICON_SYSTEM.md) for usage, sizing, and adding custom icons
 
 ## Features (Placeholders)
-
-The frontend includes placeholder pages and components for:
+These pages currently serve as placeholder mocks. Each page demonstrates the layout, typography, and intended UI state of a core workflow:
+- `/send` — Remittance flow
+- `/dashboard` — Landing view with unified balances and recent activity
+- `/transactions` — Activity feed
+- `/split` — Smart money split configuration
+- `/swap` — Swap asset feature (coming soon mock)
 
 ### Shared Components
 
 - **AddressDisplay**: A component for displaying long strings like Stellar addresses, featuring truncation, a copy-to-clipboard button, and a tooltip showing the full address on hover.
 - **Global Search**: The `/search?q=...` route surfaces matching invoice, address, and settings results from the same search vocabulary used in the command palette.
 
-1. **Dashboard** - Overview of remittances, savings, bills, and insurance
+1. **Dashboard** - Overview of remittances, savings, bills, and insurance — see [docs/DASHBOARD_LAYOUT_RULES.md](docs/DASHBOARD_LAYOUT_RULES.md) for the intended column ratios, widget priority, and mobile stacking rules
 2. **Send Money** - Remittance sending interface with automatic split preview
 3. **Smart Money Split** - Configuration for automatic allocation
 4. **Savings Goals** - Goal-based savings tracking and management
@@ -95,6 +103,27 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Mock Backend
+
+Run the local mock backend with one command:
+
+```bash
+npm run mock:backend
+```
+
+The server listens on `http://localhost:4010` by default. Set `MOCK_BACKEND_PORT`
+to use a different port. The command is idempotent and keeps all data in memory,
+so stopping and restarting it does not create or migrate local state.
+
+Useful endpoints:
+
+- `GET /api/health`
+- `GET /api/dashboard`
+- `GET /api/remittance/quote?amountMinor=10000&currency=USD&toCurrency=NGN`
+
+Mock money values are returned as integer minor units, for example
+`amountMinor`, `feeMinor`, and `receiveAmountMinor`.
 
 ### Build
 
@@ -209,6 +238,8 @@ npm run test:e2e
 
 For validating responsive breakpoints and layouts across different viewports, see the [Responsive Testing Guide](docs/RESPONSIVE_TESTING.md).
 
+For verifying components in a right-to-left (RTL) locale (Arabic, Hebrew), see the [RTL Testing Guide](docs/RTL_TESTING.md).
+
 
 ## Project Structure
 
@@ -239,7 +270,7 @@ remitwise-frontend/
 └── package.json
 ```
 
-The full keyboard shortcut reference lives at [docs/KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md) — every registered shortcut, where it's handled, and how to add or change one.
+The full keyboard shortcut reference lives at [docs/KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md) — every registered shortcut, where it's handled, and how to add or change one. End users can open the printable cheat sheet at [`/shortcuts`](/shortcuts) (also linked from the `?` help modal).
 
 ## API Routes
 
@@ -736,6 +767,7 @@ GET  /api/admin/audit         # Admin-only audit events
 - UI uses a blue/indigo color scheme
 - Responsive design with mobile-first approach
 - Motion vocabulary and standard animations are documented in [docs/MOTION.md](docs/MOTION.md).
+- Standard error copy tone and layout patterns for contributors are documented in [docs/UX_ERROR_STATES.md](docs/UX_ERROR_STATES.md).
 - Components are structured for easy integration
 
 Design token reference and migration guides:

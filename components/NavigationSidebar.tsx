@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useKeyboardNavigation } from "@/hooks/useKeyboardNavigation";
-import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 interface NavigationSidebarProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Home", icon: "Home" },
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
   { href: "/send", label: "Send Money", icon: "Send" },
+  { href: "/swap", label: "Swap", icon: "ArrowRightLeft" },
   { href: "/split", label: "Smart Split", icon: "PieChart" },
   { href: "/savings", label: "Savings Goals", icon: "Target" },
   { href: "/transactions", label: "Transactions", icon: "Receipt" },
@@ -24,11 +25,13 @@ const NAV_ITEMS = [
 
 export default function NavigationSidebar({ isOpen, onClose }: NavigationSidebarProps) {
   const pathname = usePathname();
-  const sidebarRef = useRef<HTMLElement>(null);
   const firstFocusableRef = useRef<HTMLAnchorElement>(null);
 
   // Focus trap when sidebar is open
-  useFocusTrap(sidebarRef, isOpen);
+  const sidebarRef = useFocusTrap<HTMLElement>({
+    isActive: isOpen,
+    onEscape: onClose,
+  });
 
   // Keyboard navigation: Escape to close, Arrow keys for item navigation
   useKeyboardNavigation({

@@ -4,6 +4,7 @@ Thank you for contributing! This guide covers everything you need to get started
 
 For a deeper look at how the codebase is structured, see [docs/architecture.md](docs/architecture.md).
 For component conventions (naming, ordering, and boolean-props), see [docs/PROP_CONVENTIONS.md](docs/PROP_CONVENTIONS.md).
+For standard component state implementations (default, hover, focus, disabled, error, loading), see [docs/COMPONENT_STATES.md](docs/COMPONENT_STATES.md).
 For authenticated browser data fetching, also read [docs/client-api.md](docs/client-api.md) before adding new `fetch` calls.
 
 ---
@@ -66,7 +67,10 @@ All commands below are verified against `package.json`. For contributor testing 
 ### Quick reference
 
 ```bash
+just check                # Run lint + typecheck + test (requires `just`)
+npm run check             # Run lint + typecheck + test (no extra deps)
 npm run lint              # ESLint across the whole project
+npm run typecheck         # TypeScript type-check (tsc --noEmit)
 npm run build             # Next.js production build (also runs tsc)
 npm run test              # Alias for test:unit
 npm run test:unit         # Runs BOTH node:test suites AND Vitest unit tests (see below)
@@ -122,6 +126,7 @@ npm run test:e2e   # Playwright — requires the dev server to be running
 2. **One concern per PR** — keep scope tight; large PRs stall in review.
 3. **Lint must pass** — run `npm run lint` locally before pushing. CI will reject lint failures.
    - *Note on React Hooks:* `useEffect` with no dependency array is banned to prevent accidental infinite loops and performance issues. You must provide an explicit dependency array or an `// eslint-disable-next-line no-restricted-syntax` (or biome equivalent) with a reason if it is truly intended to run on every render.
+   - `useState` with an initial function call (e.g. `useState(myExpensiveInit())`) is banned to prevent it from running on every render. Use a lazy initializer (e.g. `useState(() => myExpensiveInit())`) instead.
 4. **Build must pass** — run `npm run build` to catch TypeScript errors early.
 5. **Tests** — add or update tests that cover your change. Prefer the existing runner for the file type (`.cjs` → node:test, `.ts` → Vitest).
 6. **PR description** — summarise what changed and why. Link the issue (`Closes #NNN`).

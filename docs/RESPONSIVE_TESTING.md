@@ -10,7 +10,7 @@ This document is written for **frontend contributors** who are building new page
 ---
 
 ## Responsive Breakpoint Standards
-Before verifying, make sure your components utilize our custom Tailwind breakpoints and spacing scale (configured in [tailwind.config.js](../tailwind.config.js)).
+Before verifying, make sure your components utilize our custom Tailwind breakpoints and spacing scale (defined in [lib/config/layout.json](../lib/config/layout.json), consumed by [tailwind.config.js](../tailwind.config.js)).
 
 ### Supported Viewports
 
@@ -209,5 +209,6 @@ When verifying layout behaviors, keep an eye out for these frequent issues:
 ## Related Documentation & Resources
 - [Responsive Breakpoint Quick Reference Guide](./RESPONSIVE_BREAKPOINT_GUIDE.md) - Design patterns, spacing tokens, and safe area guides.
 - [Responsive Breakpoint Visual Guide](./RESPONSIVE_VISUAL_GUIDE.md) - ASCII wireframe representation of layouts.
-- [Tailwind CSS Configuration File](../tailwind.config.js) - Exact values for custom breakpoints.
+- [Layout Configuration](../lib/config/layout.json) - Canonical breakpoint values (consumed by `tailwind.config.js`).
+- [Tailwind CSS Configuration File](../tailwind.config.js) - Tailwind theme integration of custom breakpoints.
 - [Frontend Testing Guide](./testing.md) - General test suite conventions and execution commands.

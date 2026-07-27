@@ -9,10 +9,12 @@ vi.mock('lucide-react', () => ({
   Wallet: () => <div data-testid="icon-wallet" />,
   ChevronDown: () => <div data-testid="icon-chevron" />,
   Copy: () => <div data-testid="icon-copy" />,
+  Check: () => <div data-testid="icon-check" />,
   User: () => <div data-testid="icon-user" />,
   Settings: () => <div data-testid="icon-settings" />,
   LogOut: () => <div data-testid="icon-logout" />,
   Loader2: () => <div data-testid="icon-loader" />,
+  ExternalLink: () => <div data-testid="icon-external" />,
 }));
 
 // Mock logout

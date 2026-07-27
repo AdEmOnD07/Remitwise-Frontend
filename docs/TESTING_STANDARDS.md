@@ -218,7 +218,7 @@ npx playwright test tests/e2e/send-flow.spec.ts:31
 Before opening or requesting review on a Pull Request, ensure that you have run and verified the following locally:
 
 - [ ] **1. Linting Passes:** `npm run lint` completes with zero errors or warnings.
-- [ ] **2. Type Checking Passes:** `npx tsc --noEmit` (or `npm run build`) completes without TypeScript errors.
+- [ ] **2. Type Checking Passes:** `npm run typecheck` (or `npx tsc --noEmit` or `npm run build`) completes without TypeScript errors.
 - [ ] **3. Unit Tests Pass:** `npm test` executes cleanly and all unit tests pass.
 - [ ] **4. Integration / E2E Tests Pass:** If your changes touch API routes, database schemas, or user flows, `npm run test:integration` and `npm run test:e2e` pass.
 - [ ] **5. New Logic Is Tested:** Tests are included for all newly added functions, hooks, components, routes, or bug fixes.

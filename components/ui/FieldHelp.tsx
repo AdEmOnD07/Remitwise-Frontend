@@ -168,7 +168,7 @@ export function FieldHelp({
 
           {/* Help content */}
           <div
-            id={fieldId ? ${fieldId}-help : undefined}
+            id={fieldId ? `${fieldId}-help` : undefined}
             className="text-sm leading-relaxed text-gray-300"
           >
             {children}
