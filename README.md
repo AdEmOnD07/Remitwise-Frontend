@@ -261,7 +261,7 @@ remitwise-frontend/
 └── package.json
 ```
 
-The full keyboard shortcut reference lives at [docs/KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md) — every registered shortcut, where it's handled, and how to add or change one.
+The full keyboard shortcut reference lives at [docs/KEYBOARD_SHORTCUTS.md](docs/KEYBOARD_SHORTCUTS.md) — every registered shortcut, where it's handled, and how to add or change one. End users can open the printable cheat sheet at [`/shortcuts`](/shortcuts) (also linked from the `?` help modal).
 
 ## API Routes
 
