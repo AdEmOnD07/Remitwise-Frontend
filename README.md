@@ -23,8 +23,12 @@ This is a Next.js-based frontend skeleton that provides the UI structure for all
 - **Lucide React** - Icon library — see [docs/ICON_SYSTEM.md](docs/ICON_SYSTEM.md) for usage, sizing, and adding custom icons
 
 ## Features (Placeholders)
-
-The frontend includes placeholder pages and components for:
+These pages currently serve as placeholder mocks. Each page demonstrates the layout, typography, and intended UI state of a core workflow:
+- `/send` — Remittance flow
+- `/dashboard` — Landing view with unified balances and recent activity
+- `/transactions` — Activity feed
+- `/split` — Smart money split configuration
+- `/swap` — Swap asset feature (coming soon mock)
 
 ### Shared Components
 
