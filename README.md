@@ -238,6 +238,8 @@ npm run test:e2e
 
 For validating responsive breakpoints and layouts across different viewports, see the [Responsive Testing Guide](docs/RESPONSIVE_TESTING.md).
 
+For verifying components in a right-to-left (RTL) locale (Arabic, Hebrew), see the [RTL Testing Guide](docs/RTL_TESTING.md).
+
 
 ## Project Structure
 
