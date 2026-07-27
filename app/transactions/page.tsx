@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
+  ChevronDown,
   CircleDollarSign,
   Download,
   FileText,
@@ -23,7 +24,13 @@ import TransactionHistoryItem, {
 import { useDensity } from "@/lib/context/DensityContext";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useDebounce } from "@/lib/hooks/useDebounce";
+import { CTA_TEST_IDS } from "@/lib/cta-testids";
 import WidgetEmptyState from "@/components/ui/WidgetEmptyState";
+import {
+  serializeToCsv,
+  serializeToJson,
+  getExportFilename,
+} from "@/lib/utils/export-serializer";
 
 const allTransactions: Transaction[] = [
   {
@@ -267,7 +274,36 @@ function normalizeQuery(value: string) {
   return value.trim().toLowerCase();
 }
 
+import { useSeo } from "@/lib/hooks/useSeo";
+import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
+
+type SortKey = "date" | "amount";
+type SortDirection = "asc" | "desc";
+
+function sortTransactions(
+  transactions: Transaction[],
+  sortKey: SortKey,
+  sortDirection: SortDirection
+) {
+  const direction = sortDirection === "asc" ? 1 : -1;
+
+  return [...transactions].sort((a, b) => {
+    const left =
+      sortKey === "date" ? parseTransactionDate(a.date).getTime() : a.amount;
+    const right =
+      sortKey === "date" ? parseTransactionDate(b.date).getTime() : b.amount;
+
+    if (left === right) return a.id.localeCompare(b.id);
+    return (left - right) * direction;
+  });
+}
+
 export default function TransactionsPage() {
+  useSeo({
+    title: "Transactions - RemitWise",
+    description: "Manage all your transactions and transfers",
+  });
+
   const { t } = useClientTranslator();
   const { density } = useDensity();
   const [searchQuery, setSearchQuery] = useState("");
@@ -276,6 +312,8 @@ export default function TransactionsPage() {
   const [selectedStatuses, setSelectedStatuses] = useState<TransactionStatus[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const groupLabels: Record<GroupKey, { label: string; helper: string }> = {
     today: {
@@ -337,14 +375,24 @@ export default function TransactionsPage() {
       earlier: [],
     };
 
-    filteredTransactions.forEach((transaction) => {
+    sortTransactions(filteredTransactions, sortKey, sortDirection).forEach((transaction) => {
       groups[getGroupKey(parseTransactionDate(transaction.date))].push(
         transaction
       );
     });
 
     return groups;
-  }, [filteredTransactions]);
+  }, [filteredTransactions, sortDirection, sortKey]);
+
+  const handleSortChange = (nextSortKey: SortKey) => {
+    if (nextSortKey === sortKey) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(nextSortKey);
+    setSortDirection(nextSortKey === "date" ? "desc" : "asc");
+  };
 
   const activeFilterCount =
     selectedTypes.length +
@@ -380,7 +428,44 @@ export default function TransactionsPage() {
     setDateTo("");
   };
 
-  const handleExportClick = () => {
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+  const exportButtonRef = useRef<HTMLButtonElement>(null);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside or escape key
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (exportButtonRef.current?.contains(target)) return;
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(target)) {
+        setIsExportDropdownOpen(false);
+      }
+    };
+    if (isExportDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isExportDropdownOpen]);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsExportDropdownOpen(false);
+      }
+    };
+    if (isExportDropdownOpen) {
+      document.addEventListener("keydown", handleEscape);
+    }
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isExportDropdownOpen]);
+
+  const handleExport = (format: "csv" | "json") => {
+    if (filteredTransactions.length === 0) return;
+
     const rows = filteredTransactions.map((transaction) => ({
       id: transaction.id,
       type: transaction.type,
@@ -392,21 +477,25 @@ export default function TransactionsPage() {
       fee: transaction.fee,
     }));
 
-    const csv = [
-      Object.keys(rows[0] ?? {}).join(","),
-      ...rows.map((row) =>
-        Object.values(row)
-          .map((value) => `"${String(value).replace(/"/g, '""')}"`)
-          .join(",")
-      ),
-    ].join("\n");
+    let dataString = "";
+    let mimeType = "";
+    if (format === "csv") {
+      dataString = serializeToCsv(rows);
+      mimeType = "text/csv;charset=utf-8;";
+    } else {
+      dataString = serializeToJson(rows);
+      mimeType = "application/json;charset=utf-8;";
+    }
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const filename = getExportFilename(format, dateFrom, dateTo);
+    const blob = new Blob([dataString], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "remitwise-transactions.csv";
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
@@ -414,27 +503,80 @@ export default function TransactionsPage() {
     <main className="min-h-screen bg-[#010101]">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(10,10,10,0.98))] p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between tall:sticky tall:top-16 375:tall:top-20 tall:z-40 bg-[#121212] py-4 border-b border-white/[0.04]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-red-300">
                 {t("transactionHistory.titleStandalone")}
               </p>
-              <h1 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">
+              <PageHeadingLink
+                headingId="transactions-page-heading"
+                label="USDC activity"
+                wrapperClassName="mt-3 flex min-w-0 items-center gap-2"
+                headingClassName="text-2xl font-semibold text-white sm:text-3xl"
+                buttonClassName="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-white/60 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#010101]"
+              >
                 USDC activity
-              </h1>
+              </PageHeadingLink>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
                 {t("transactionHistory.subtitleStandalone")}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleExportClick}
-              disabled={filteredTransactions.length === 0}
-              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#010101] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-gray-500"
-            >
-              <Download className="h-4 w-4" />
-              {t("transactionHistory.export")}
-            </button>
+            <div className="relative">
+              <button
+                ref={exportButtonRef}
+                type="button"
+                onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+                disabled={filteredTransactions.length === 0}
+                aria-expanded={isExportDropdownOpen}
+                aria-haspopup="true"
+                aria-label="Export filtered transactions"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#010101] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-gray-500"
+              >
+                <Download className="h-4 w-4" />
+                {t("transactionHistory.export")}
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isExportDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+              
+              {isExportDropdownOpen && filteredTransactions.length > 0 && (
+                <div
+                  ref={exportDropdownRef}
+                  className="absolute right-0 mt-2 w-64 rounded-xl border border-white/10 bg-[#121212] p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                  role="menu"
+                  aria-label="Export formats"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleExport("csv");
+                      setIsExportDropdownOpen(false);
+                    }}
+                    className="flex w-full items-start gap-3 rounded-lg p-2 text-left transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    role="menuitem"
+                  >
+                    <FileText className="mt-0.5 h-4 w-4 text-red-400 shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium text-white">Export as CSV</div>
+                      <div className="text-xs text-gray-500">For spreadsheets and reports</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleExport("json");
+                      setIsExportDropdownOpen(false);
+                    }}
+                    className="flex w-full items-start gap-3 rounded-lg p-2 text-left transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    role="menuitem"
+                  >
+                    <CircleDollarSign className="mt-0.5 h-4 w-4 text-red-400 shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium text-white">Export as JSON</div>
+                      <div className="text-xs text-gray-500">For developers and raw data</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <section
@@ -666,6 +808,36 @@ export default function TransactionsPage() {
               >
                 {t("transactionHistory.activeFilters.clearAll")}
               </button>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                {t("transactionHistory.sort.label", "Sort")}
+              </span>
+              {(["date", "amount"] as const).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleSortChange(key)}
+                  aria-pressed={sortKey === key}
+                  className={`inline-flex min-h-[40px] items-center rounded-full border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 ${
+                    sortKey === key
+                      ? "border-red-400/40 bg-red-500/15 text-red-100"
+                      : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {key === "date"
+                    ? t("transactionHistory.sort.date", "Date")
+                    : t("transactionHistory.sort.amount", "Amount")}
+                  {sortKey === key
+                    ? ` ${
+                        sortDirection === "asc"
+                          ? t("transactionHistory.sort.ascending", "ascending")
+                          : t("transactionHistory.sort.descending", "descending")
+                      }`
+                    : ""}
+                </button>
+              ))}
             </div>
           </section>
 

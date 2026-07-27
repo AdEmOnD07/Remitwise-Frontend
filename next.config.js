@@ -1,4 +1,7 @@
 const { withSentryConfig } = require("@sentry/nextjs");
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -10,6 +13,23 @@ const rewrites = async () => {
     {
       source: "/api/:path*",
       destination: "/api/v1/:path*",
+    },
+  ];
+};
+
+// Insights routes consolidated into the canonical /financial-insights page.
+// Permanent (308) redirects keep existing bookmarks/links alive.
+const redirects = async () => {
+  return [
+    {
+      source: "/insights",
+      destination: "/financial-insights",
+      permanent: true,
+    },
+    {
+      source: "/financial-insight",
+      destination: "/financial-insights",
+      permanent: true,
     },
   ];
 };
@@ -28,7 +48,9 @@ const sentryWebpackPluginOptions = {
   disableLogger: true,
 };
 
-module.exports = withSentryConfig(
-  { ...nextConfig, rewrites },
-  sentryWebpackPluginOptions
+module.exports = withBundleAnalyzer(
+  withSentryConfig(
+    { ...nextConfig, rewrites, redirects },
+    sentryWebpackPluginOptions
+  )
 );

@@ -5,6 +5,7 @@ import { Shield, Plus, Info } from "lucide-react";
 import { type Policy } from "@/lib/contracts/insurance";
 import { getPolicyPaymentPresentation } from "@/lib/ui/status-semantics";
 import { apiClient } from "@/lib/client/apiClient";
+import { CTA_TEST_IDS } from "@/lib/cta-testids";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import PolicyDetail from "@/components/insurance/PolicyDetail";
 import NewPolicyForm from "@/components/forms/NewPolicyForm";
@@ -84,6 +85,7 @@ interface PageState {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function InsurancePage() {
+  const { t } = useClientTranslator();
   const [state, setState] = useState<PageState>({
     policies: [],
     loading: true,
@@ -92,6 +94,20 @@ export default function InsurancePage() {
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [showNewPolicy, setShowNewPolicy] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const { toast } = useToast();
+
+  // Live create-policy form wired to POST /api/insurance.
+  const [formState, formAction, formPending] = useFormAction("/api/insurance");
+
+  // On a successful create, toast, reset the form, and refresh the list.
+  useEffect(() => {
+    if (!formState?.success) return;
+    toast({ variant: "success", title: t("insurance.form_success") });
+    setShowNewPolicy(false);
+    setFormKey((k) => k + 1); // remount the form to clear inputs/errors
+    setSelectedPolicy(null);
+  }, [formState?.success, toast, t]);
 
   // Fetch policies on mount
   useEffect(() => {
@@ -125,7 +141,7 @@ export default function InsurancePage() {
 
     fetchPolicies();
     return () => { cancelled = true; };
-  }, []);
+  }, [t]);
 
   const handleOpenDetail = useCallback((policy: Policy) => {
     setSelectedPolicy(policy);
@@ -145,11 +161,16 @@ export default function InsurancePage() {
     <div className="min-h-screen bg-[#0a0b0f] text-white">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 tall:sticky tall:top-16 375:tall:top-20 tall:z-40 bg-[#0a0b0f] py-4 border-b border-white/[0.04]">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            <PageHeadingLink
+              headingId="insurance-page-heading"
+              label={t("insurance.page_title")}
+              headingClassName="text-2xl sm:text-3xl font-bold tracking-tight"
+              buttonClassName="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 text-white/60 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0b0f]"
+            >
               {t("insurance.page_title")}
-            </h1>
+            </PageHeadingLink>
             <p className="text-gray-400 mt-1 text-sm sm:text-base">
               {t("insurance.page_subtitle")}
             </p>
@@ -192,9 +213,11 @@ export default function InsurancePage() {
         {showNewPolicy && (
           <div className="mb-8">
             <NewPolicyForm
-              pending={false}
-              state={{}}
-              formAction={() => {}}
+              key={formKey}
+              pending={formPending}
+              state={formState}
+              formAction={formAction}
+              t={t}
             />
           </div>
         )}
@@ -228,6 +251,7 @@ export default function InsurancePage() {
               body={t("insurance.no_policies_body")}
               onCta={() => setShowNewPolicy(true)}
               ctaLabel={t("insurance.new_policy")}
+              ctaTestId={CTA_TEST_IDS.page.insuranceEmptyPrimary}
             />
           )}
 
@@ -365,11 +389,13 @@ function EmptyPolicies({
   body,
   onCta,
   ctaLabel,
+  ctaTestId,
 }: {
   title: string;
   body: string;
   onCta: () => void;
   ctaLabel: string;
+  ctaTestId?: string;
 }) {
   return (
     <div className="text-center py-12 sm:py-16 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] border-dashed">

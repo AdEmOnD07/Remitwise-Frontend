@@ -10,11 +10,117 @@ import { Loader2, Info } from 'lucide-react';
  * Coverage types: Health, Emergency, Life
  * Inputs: Monthly Premium, Coverage Amount, Next Payment Date
  */
-export default function NewPolicyForm({ pending, state, formAction }: {
+type Translate = (key: string, interpolations?: Record<string, string | number>) => string;
+
+/**
+ * Client-side validation schema for the new-policy form. Mirrors the server
+ * schema in `app/api/insurance/route.ts` so invalid input is caught before the
+ * network round-trip. Field keys map 1:1 to the form `name` attributes.
+ */
+const policyFormSchema = z.object({
+  policyName: z.string().min(4, 'form_err_policy_name'),
+  coverageType: z.enum(['Health', 'Emergency', 'Life'], 'form_err_coverage_type'),
+  monthlyPremium: z.coerce.number().gt(0, 'form_err_monthly_premium'),
+  coverageAmount: z.coerce.number().gt(0, 'form_err_coverage_amount'),
+  nextPayment: z.string().min(1, 'form_err_next_payment'),
+});
+
+type FieldErrors = Partial<Record<keyof z.infer<typeof policyFormSchema>, string>>;
+
+/**
+ * Validate a submitted `FormData` against {@link policyFormSchema}.
+ * Returns field error keys (i18n keys) keyed by field name; empty when valid.
+ */
+function validatePolicyForm(formData: FormData): FieldErrors {
+  const result = policyFormSchema.safeParse({
+    policyName: formData.get('policyName') ?? '',
+    coverageType: formData.get('coverageType') ?? '',
+    monthlyPremium: formData.get('monthlyPremium') ?? '',
+    coverageAmount: formData.get('coverageAmount') ?? '',
+    nextPayment: formData.get('nextPayment') ?? '',
+  });
+
+  if (result.success) return {};
+
+  const errors: FieldErrors = {};
+  for (const issue of result.error.issues) {
+    const field = issue.path[0] as keyof FieldErrors;
+    if (field && !errors[field]) errors[field] = issue.message;
+  }
+  return errors;
+}
+
+export interface NewPolicyFormProps {
+  /** Whether a submit is in flight (drives the loading state). */
   pending: boolean;
-  state: any;
-  formAction: any;
-}) {
+  /** Latest action state returned by `useFormAction`. */
+  state: ActionState;
+  /** Submit handler from `useFormAction` (POSTs to `/api/insurance`). */
+  formAction: (formData: FormData) => void;
+  /** Translator for labels and error messages (en/es). */
+  t: Translate;
+}
+
+/**
+ * Form for creating a new insurance policy. Validates input with Zod before
+ * submitting via `useFormAction` to `/api/insurance`, surfacing both
+ * client-side and server-side field errors with `aria-invalid` + error text.
+ */
+export default function NewPolicyForm({ pending, state, formAction, t }: NewPolicyFormProps) {
+  const baseId = useId();
+  const [errors, setErrors] = useState<FieldErrors>({});
+
+  // Map server validation errors (by path) into per-field error keys.
+  const serverErrors: FieldErrors = {};
+  for (const ve of state?.validationErrors ?? []) {
+    const field = ve.path as keyof FieldErrors;
+    if (field && !serverErrors[field]) serverErrors[field] = ve.message;
+  }
+
+  const errorFor = (field: keyof FieldErrors): string | undefined => {
+    const key = errors[field] ?? serverErrors[field];
+    if (!key) return undefined;
+    // Client keys are i18n keys (form_err_*); server messages may be raw text.
+    return key.startsWith('form_err_') ? t(`insurance.${key}`) : key;
+  };
+
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+    const formData = new FormData(event.currentTarget);
+    const fieldErrors = validatePolicyForm(formData);
+    setErrors(fieldErrors);
+
+    if (Object.keys(fieldErrors).length > 0) {
+      event.preventDefault();
+      // Focus the first invalid control for keyboard/AT users.
+      const firstInvalid = event.currentTarget.querySelector<HTMLElement>('[aria-invalid="true"]');
+      firstInvalid?.focus();
+    }
+  };
+
+  const fieldClass =
+    'w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-brand.red focus:border-transparent';
+  const invalidClass = 'border-red-500';
+  const validClass = 'border-gray-300';
+
+  const renderError = (field: keyof FieldErrors) => {
+    const message = errorFor(field);
+    if (!message) return null;
+    return (
+      <p id={`${baseId}-${field}-error`} className="text-red-500 text-sm" role="alert">
+        {message}
+      </p>
+    );
+  };
+
+  const ariaProps = (field: keyof FieldErrors, extraClass = '') => {
+    const invalid = Boolean(errorFor(field));
+    return {
+      'aria-invalid': invalid,
+      'aria-describedby': invalid ? `${baseId}-${field}-error` : undefined,
+      className: `${extraClass} ${fieldClass} ${invalid ? invalidClass : validClass}`.trim(),
+    };
+  };
+
   return (
     <div className="space-y-6">
       {/* Disabled-state notice */}
@@ -124,3 +230,5 @@ export default function NewPolicyForm({ pending, state, formAction }: {
     </div>
   );
 }
+
+export { policyFormSchema, validatePolicyForm };
