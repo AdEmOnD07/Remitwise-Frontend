@@ -176,6 +176,8 @@ export function AccessibleCalendarGrid({
   const [displayMonth, setDisplayMonth] = useState<number>(
     value?.month ?? today.month,
   );
+  const displayYearRef = useRef(displayYear);
+  const displayMonthRef = useRef(displayMonth);
 
   // The date cell that currently holds roving tabindex="0"
   const [focusedDate, setFocusedDate] = useState<CalendarDate>(
@@ -184,6 +186,7 @@ export function AccessibleCalendarGrid({
 
   // Live region announcement for screen readers
   const [announcement, setAnnouncement] = useState("");
+  const announcementTimerRef = useRef<number | null>(null);
 
   const gridRef = useRef<HTMLTableElement>(null);
   const headingId = useId();
@@ -201,6 +204,11 @@ export function AccessibleCalendarGrid({
   // Grid data
   const grid = buildMonthGrid(displayYear, displayMonth, firstDayOfWeek);
 
+  useEffect(() => {
+    displayYearRef.current = displayYear;
+    displayMonthRef.current = displayMonth;
+  }, [displayYear, displayMonth]);
+
   // When focused date changes to a different month, update display month
   useEffect(() => {
     if (
@@ -211,6 +219,14 @@ export function AccessibleCalendarGrid({
       setDisplayMonth(focusedDate.month);
     }
   }, [focusedDate, displayYear, displayMonth]);
+
+  useEffect(() => {
+    return () => {
+      if (announcementTimerRef.current !== null) {
+        window.clearTimeout(announcementTimerRef.current);
+      }
+    };
+  }, []);
 
   // Programmatically move focus to the focused date cell
   const focusCellForDate = useCallback((date: CalendarDate) => {
@@ -226,11 +242,22 @@ export function AccessibleCalendarGrid({
   // Navigate to prev/next month
   const navigateMonth = useCallback(
     (delta: -1 | 1) => {
-      const { year, month } = addMonths(displayYear, displayMonth, delta);
+      const { year, month } = addMonths(displayYearRef.current, displayMonthRef.current, delta);
+      displayYearRef.current = year;
+      displayMonthRef.current = month;
       setDisplayYear(year);
       setDisplayMonth(month);
       const newLabel = getMonthYearLabel(year, month, locale);
-      setAnnouncement(newLabel);
+
+      if (announcementTimerRef.current !== null) {
+        window.clearTimeout(announcementTimerRef.current);
+      }
+
+      announcementTimerRef.current = window.setTimeout(() => {
+        setAnnouncement(newLabel);
+        announcementTimerRef.current = null;
+      }, 50);
+
       // Move focused date into the new month if it's out of range
       setFocusedDate((prev) => {
         if (prev.year !== year || prev.month !== month) {
@@ -239,7 +266,7 @@ export function AccessibleCalendarGrid({
         return prev;
       });
     },
-    [displayYear, displayMonth, locale],
+    [locale],
   );
 
   // Keyboard handler on the grid

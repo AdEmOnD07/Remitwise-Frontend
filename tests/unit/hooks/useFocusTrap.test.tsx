@@ -8,7 +8,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 import React from 'react';
-import { useFocusTrap } from '@/src/lib/hooks/useFocusTrap';
+import { useFocusTrap } from '@/lib/hooks/useFocusTrap';
 
 // Test component that uses the focus trap
 const TestFocusTrapComponent = ({

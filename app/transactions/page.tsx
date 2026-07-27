@@ -277,6 +277,27 @@ function normalizeQuery(value: string) {
 import { useSeo } from "@/lib/hooks/useSeo";
 import { useOnClickOutside } from "@/lib/hooks/useOnClickOutside";
 
+type SortKey = "date" | "amount";
+type SortDirection = "asc" | "desc";
+
+function sortTransactions(
+  transactions: Transaction[],
+  sortKey: SortKey,
+  sortDirection: SortDirection
+) {
+  const direction = sortDirection === "asc" ? 1 : -1;
+
+  return [...transactions].sort((a, b) => {
+    const left =
+      sortKey === "date" ? parseTransactionDate(a.date).getTime() : a.amount;
+    const right =
+      sortKey === "date" ? parseTransactionDate(b.date).getTime() : b.amount;
+
+    if (left === right) return a.id.localeCompare(b.id);
+    return (left - right) * direction;
+  });
+}
+
 export default function TransactionsPage() {
   useSeo({
     title: "Transactions - RemitWise",
@@ -291,6 +312,8 @@ export default function TransactionsPage() {
   const [selectedStatuses, setSelectedStatuses] = useState<TransactionStatus[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const groupLabels: Record<GroupKey, { label: string; helper: string }> = {
     today: {
@@ -352,14 +375,24 @@ export default function TransactionsPage() {
       earlier: [],
     };
 
-    filteredTransactions.forEach((transaction) => {
+    sortTransactions(filteredTransactions, sortKey, sortDirection).forEach((transaction) => {
       groups[getGroupKey(parseTransactionDate(transaction.date))].push(
         transaction
       );
     });
 
     return groups;
-  }, [filteredTransactions]);
+  }, [filteredTransactions, sortDirection, sortKey]);
+
+  const handleSortChange = (nextSortKey: SortKey) => {
+    if (nextSortKey === sortKey) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(nextSortKey);
+    setSortDirection(nextSortKey === "date" ? "desc" : "asc");
+  };
 
   const activeFilterCount =
     selectedTypes.length +
@@ -775,6 +808,36 @@ export default function TransactionsPage() {
               >
                 {t("transactionHistory.activeFilters.clearAll")}
               </button>
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
+              <span className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">
+                {t("transactionHistory.sort.label", "Sort")}
+              </span>
+              {(["date", "amount"] as const).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleSortChange(key)}
+                  aria-pressed={sortKey === key}
+                  className={`inline-flex min-h-[40px] items-center rounded-full border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 ${
+                    sortKey === key
+                      ? "border-red-400/40 bg-red-500/15 text-red-100"
+                      : "border-white/10 bg-white/[0.03] text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {key === "date"
+                    ? t("transactionHistory.sort.date", "Date")
+                    : t("transactionHistory.sort.amount", "Amount")}
+                  {sortKey === key
+                    ? ` ${
+                        sortDirection === "asc"
+                          ? t("transactionHistory.sort.ascending", "ascending")
+                          : t("transactionHistory.sort.descending", "descending")
+                      }`
+                    : ""}
+                </button>
+              ))}
             </div>
           </section>
 

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { AlertTriangle, HelpCircle, X } from "lucide-react";
 import { useConfirmInternal } from "@/lib/context/ConfirmContext";
+import { useFocusTrap } from "@/lib/hooks/useFocusTrap";
 
 /**
  * ConfirmDialog
@@ -24,68 +25,13 @@ export default function ConfirmDialog() {
   const { isOpen, title, description, confirmLabel, cancelLabel, intent } =
     state;
 
-  const dialogRef = useRef<HTMLDivElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // -------------------------------------------------------------------------
-  // Focus management
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
-      // Give the browser a tick to paint the dialog before we move focus
-      const frame = requestAnimationFrame(() => {
-        confirmBtnRef.current?.focus();
-      });
-      return () => cancelAnimationFrame(frame);
-    } else {
-      previousFocusRef.current?.focus();
-    }
-  }, [isOpen]);
-
-  // -------------------------------------------------------------------------
-  // Keyboard handling (Escape → cancel, Tab cycling)
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        _resolve(false);
-        return;
-      }
-
-      if (e.key === "Tab" && dialogRef.current) {
-        const focusable = Array.from(
-          dialogRef.current.querySelectorAll<HTMLElement>(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-          ),
-        ).filter((el) => !el.hasAttribute("disabled"));
-
-        if (focusable.length === 0) return;
-
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault();
-            last.focus();
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault();
-            first.focus();
-          }
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, _resolve]);
+  const dialogRef = useFocusTrap<HTMLDivElement>({
+    isActive: isOpen,
+    onEscape: () => _resolve(false),
+    initialFocusRef: confirmBtnRef,
+  });
 
   // -------------------------------------------------------------------------
   // Render

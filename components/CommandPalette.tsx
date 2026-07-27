@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Send, LayoutDashboard, FileText, Shield, Users, Settings, Wallet, X, Command, SearchCheck, Clock } from "lucide-react";
+import { Search, Send, LayoutDashboard, FileText, Shield, Users, Settings, Wallet, X, Command, SearchCheck, Clock, Keyboard } from "lucide-react";
+import { SHORTCUTS_PRINTABLE_PATH } from "@/lib/config/shortcuts";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useRecentItems } from "@/lib/hooks/useRecentItems";
 import { RECENT_COMMANDS_STORAGE_KEY } from "@/lib/config/recent";
@@ -24,7 +25,7 @@ export default function CommandPalette() {
   const { t } = useClientTranslator();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   const { items: recentCommandIds, addItem: addRecentCommandId } = useRecentItems<string>(
     RECENT_COMMANDS_STORAGE_KEY,
     5
@@ -78,6 +79,14 @@ export default function CommandPalette() {
       description: "Configure your settings",
       icon: <Settings className="w-4 h-4" />,
       action: () => router.push("/settings"),
+      category: "routes",
+    },
+    {
+      id: "shortcuts",
+      label: "Keyboard Shortcuts",
+      description: "View and print the full shortcuts cheat sheet",
+      icon: <Keyboard className="w-4 h-4" />,
+      action: () => router.push(SHORTCUTS_PRINTABLE_PATH),
       category: "routes",
     },
     {
@@ -153,6 +162,16 @@ export default function CommandPalette() {
         if (e.key === "ArrowUp") {
           e.preventDefault();
           setSelectedIndex((prev) => (prev - 1 + displayedCommands.length) % displayedCommands.length);
+        }
+        // Home to jump to first item
+        if (e.key === "Home") {
+          e.preventDefault();
+          setSelectedIndex(0);
+        }
+        // End to jump to last item
+        if (e.key === "End") {
+          e.preventDefault();
+          setSelectedIndex(displayedCommands.length - 1);
         }
         // Enter to execute
         if (e.key === "Enter" && displayedCommands[selectedIndex]) {
@@ -311,6 +330,11 @@ export default function CommandPalette() {
             <div className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">↑↓</kbd>
               <span>to navigate</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">Home</kbd>
+              <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">End</kbd>
+              <span>to jump</span>
             </div>
             <div className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-white/5 rounded border border-white/10">↵</kbd>

@@ -224,7 +224,8 @@ className="text-sm 375:text-base"
 
 ## Resources
 
-- [Tailwind Config](../tailwind.config.js)
+- [Layout Config](../lib/config/layout.json) — Canonical breakpoint values
+- [Tailwind Config](../tailwind.config.js) — Theme integration
 - [Global CSS Utilities](../app/globals.css)
 - [Full Documentation](./tailwind-extensions.md)
 - [Implementation Summary](./RESPONSIVE_AUDIT_IMPLEMENTATION.md)

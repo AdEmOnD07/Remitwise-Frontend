@@ -19,7 +19,7 @@ expect.extend(toHaveNoViolations);
 
 // Mock the useFocusTrap hook to capture its usage
 const mockUseFocusTrap = vi.fn(() => ({ current: null }));
-vi.mock('@/src/lib/hooks/useFocusTrap', () => ({
+vi.mock('@/lib/hooks/useFocusTrap', () => ({
   useFocusTrap: mockUseFocusTrap,
 }));
 
