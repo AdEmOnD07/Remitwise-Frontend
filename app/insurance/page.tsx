@@ -118,7 +118,7 @@ export default function InsurancePage() {
           <button
             onClick={() => setShowNewPolicy((s) => !s)}
             data-testid={CTA_TEST_IDS.page.insurancePrimary}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/40"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-red hover:bg-brand-redHover active:bg-red-800 text-white font-semibold text-sm transition-colors focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
           >
             <Plus className="w-4 h-4" />
             {t("insurance.new_policy")}
@@ -179,7 +179,7 @@ export default function InsurancePage() {
               <p className="text-red-300 text-sm">{state.error}</p>
               <button
                 onClick={() => window.location.reload()}
-                className="mt-3 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-300 text-sm transition-colors"
+                className="mt-3 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/8 active:bg-white/10 border border-white/10 hover:border-white/15 text-gray-300 hover:text-white text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
               >
                 Retry
               </button>
@@ -300,7 +300,7 @@ function PolicyCard({
       {/* View detail button */}
       <button
         onClick={onViewDetail}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] text-sm text-gray-300 hover:text-white font-medium transition-all focus:outline-none focus:ring-2 focus:ring-red-500/30"
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] active:bg-white/[0.10] border border-white/[0.08] hover:border-white/[0.15] text-sm text-gray-300 hover:text-white font-semibold transition-all focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
       >
         {t("insurance.card_view_detail")}
       </button>
@@ -348,7 +348,7 @@ function EmptyPolicies({
       <button
         onClick={onCta}
         data-testid={ctaTestId}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-red hover:bg-brand-redHover active:bg-red-800 text-white text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
       >
         <Plus className="w-4 h-4" />
         {ctaLabel}

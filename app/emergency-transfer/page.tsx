@@ -217,7 +217,7 @@ export default function EmergencyTransferPage() {
                     value={recipientName}
                     onChange={(e) => setRecipientName(e.target.value)}
                     placeholder="Enter recipient name"
-                    className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 text-white placeholder:text-zinc-600 focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 outline-none transition-all"
+                    className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 text-white placeholder:text-zinc-600 transition-all outline-none focus-visible:border-red-500/50 focus-visible:ring-1 focus-visible:ring-red-500/50"
                   />
                 </div>
 
@@ -231,7 +231,7 @@ export default function EmergencyTransferPage() {
                     value={recipientAddress}
                     onChange={(e) => setRecipientAddress(normalizeStellarAddress(e.target.value))}
                     placeholder="GXXXXXXXXXXXXXXXXXXXXXXXX"
-                    className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 text-white placeholder:text-zinc-600 focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 outline-none transition-all font-mono"
+                    className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 text-white placeholder:text-zinc-600 transition-all outline-none font-mono focus-visible:border-red-500/50 focus-visible:ring-1 focus-visible:ring-red-500/50"
                   />
                   {recipientAddress && (
                     <p
@@ -253,7 +253,7 @@ export default function EmergencyTransferPage() {
               <div className="flex gap-3 mt-6">
                 <Link
                   href="/dashboard"
-                  className="flex-1 rounded-2xl border border-white/10 bg-[#161616] px-6 py-3 font-semibold text-white transition hover:bg-[#202020] text-center"
+                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/8 active:bg-white/10 hover:border-white/15 px-6 py-3 font-semibold text-gray-300 hover:text-white transition-all text-center focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
                 >
                   Cancel
                 </Link>
@@ -261,7 +261,7 @@ export default function EmergencyTransferPage() {
                   onClick={handleRecipientContinue}
                   disabled={!recipientName || !validation.isValid}
                   data-testid={CTA_TEST_IDS.flow.emergencyTransferRecipientPrimary}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-red-600 to-red-700 px-6 py-3 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-brand-red hover:bg-brand-redHover active:bg-red-800 px-6 py-3 font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:bg-red-600/40 disabled:text-white/60 focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />
@@ -286,7 +286,7 @@ export default function EmergencyTransferPage() {
                       value={amount || ""}
                       onChange={(e) => setAmount(Number(e.target.value))}
                       placeholder="0.00"
-                      className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 pr-20 text-white placeholder:text-zinc-600 focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 outline-none transition-all font-semibold text-2xl"
+                      className="w-full rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 pr-20 text-white placeholder:text-zinc-600 transition-all outline-none font-semibold text-2xl focus-visible:border-red-500/50 focus-visible:ring-1 focus-visible:ring-red-500/50"
                     />
                     <span className="absolute right-5 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-500 pointer-events-none">
                       USDC
@@ -357,14 +357,14 @@ export default function EmergencyTransferPage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setStep("recipient")}
-                  className="flex-1 rounded-2xl border border-white/10 bg-[#161616] px-6 py-3 font-semibold text-white transition hover:bg-[#202020]"
+                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/8 active:bg-white/10 hover:border-white/15 px-6 py-3 font-semibold text-gray-300 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleAmountReview}
                   disabled={amount <= 0}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-red-600 to-red-700 px-6 py-3 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-brand-red hover:bg-brand-redHover active:bg-red-800 px-6 py-3 font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:bg-red-600/40 disabled:text-white/60 focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
                 >
                   Review
                   <ArrowRight className="w-4 h-4" />
@@ -434,14 +434,14 @@ export default function EmergencyTransferPage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setStep("amount")}
-                  className="flex-1 rounded-2xl border border-white/10 bg-[#161616] px-6 py-3 font-semibold text-white transition hover:bg-[#202020]"
+                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/8 active:bg-white/10 hover:border-white/15 px-6 py-3 font-semibold text-gray-300 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleReviewConfirm}
                   data-testid={CTA_TEST_IDS.flow.emergencyTransferReviewPrimary}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-red-600 to-red-700 px-6 py-3 font-semibold text-white transition"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-brand-red hover:bg-brand-redHover active:bg-red-800 px-6 py-3 font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
                 >
                   Confirm Details
                   <ArrowRight className="w-4 h-4" />
@@ -507,7 +507,7 @@ export default function EmergencyTransferPage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setStep("review")}
-                  className="flex-1 rounded-2xl border border-white/10 bg-[#161616] px-6 py-3 font-semibold text-white transition hover:bg-[#202020]"
+                  className="flex-1 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/8 active:bg-white/10 hover:border-white/15 px-6 py-3 font-semibold text-gray-300 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
                 >
                   Back
                 </button>
@@ -515,7 +515,7 @@ export default function EmergencyTransferPage() {
                   onClick={handleFinalConfirm}
                   disabled={!confirmedUrgent || !confirmedFee}
                   data-testid={CTA_TEST_IDS.flow.emergencyTransferConfirmPrimary}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-red-600 to-red-700 px-6 py-3 font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-brand-red hover:bg-brand-redHover active:bg-red-800 px-6 py-3 font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:bg-red-600/40 disabled:text-white/60 focus-visible:outline-none focus-visible:ring-focus focus-visible:ring-red-400 focus-visible:ring-offset-focus focus-visible:ring-offset-black"
                 >
                   Submit Transfer
                   <Zap className="w-4 h-4" />
