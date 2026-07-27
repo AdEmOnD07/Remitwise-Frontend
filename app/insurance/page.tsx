@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Shield, Plus } from "lucide-react";
+import { Shield, Plus, Info } from "lucide-react";
 import { type Policy } from "@/lib/contracts/insurance";
 import { getPolicyPaymentPresentation } from "@/lib/ui/status-semantics";
 import { apiClient } from "@/lib/client/apiClient";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import PolicyDetail from "@/components/insurance/PolicyDetail";
 import NewPolicyForm from "@/components/forms/NewPolicyForm";
+import PrimaryButton from "@/components/ui/PrimaryButton";
 
 // ─── i18n stubs (replace with your real i18n hook) ───────────────────────────
 
@@ -153,13 +154,13 @@ export default function InsurancePage() {
               {t("insurance.page_subtitle")}
             </p>
           </div>
-          <button
+          <PrimaryButton
             onClick={() => setShowNewPolicy((s) => !s)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/40"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl"
           >
             <Plus className="w-4 h-4" />
             {t("insurance.new_policy")}
-          </button>
+          </PrimaryButton>
         </div>
 
         {/* Total premium stat */}
@@ -180,8 +181,8 @@ export default function InsurancePage() {
                   {t("insurance.total_premium_sub")}
                 </p>
               </div>
-              <div className="p-3 rounded-xl bg-red-500/10">
-                <Shield className="w-6 h-6 text-red-400" />
+              <div className="p-3 rounded-xl bg-brand.red/10">
+                <Shield className="w-6 h-6 text-brand.red" />
               </div>
             </div>
           </div>
@@ -201,7 +202,7 @@ export default function InsurancePage() {
         {/* Policies list */}
         <div>
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-red-400" />
+            <Shield className="w-5 h-5 text-brand.red" />
             {t("insurance.active_policies")}
           </h2>
 
@@ -210,11 +211,11 @@ export default function InsurancePage() {
           )}
 
           {state.error && !state.loading && (
-            <div className="p-6 rounded-2xl border border-red-500/20 bg-red-500/[0.06] text-center">
-              <p className="text-red-300 text-sm">{state.error}</p>
+            <div className="p-6 rounded-2xl border border-brand.red/20 bg-brand.red/[0.06] text-center">
+              <p className="text-brand.red text-sm">{state.error}</p>
               <button
                 onClick={() => window.location.reload()}
-                className="mt-3 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-300 text-sm transition-colors"
+                className="mt-3 px-4 py-2 rounded-lg bg-brand.red/20 hover:bg-brand.red/30 text-brand.red text-sm transition-colors"
               >
                 Retry
               </button>
@@ -276,7 +277,7 @@ function PolicyCard({
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-white/[0.05]">
-            <Shield className="w-5 h-5 text-red-400" />
+            <Shield className="w-5 h-5 text-brand.red" />
           </div>
           <div>
             <h3 className="font-semibold text-white text-sm sm:text-base">{policy.name}</h3>
@@ -334,7 +335,7 @@ function PolicyCard({
       {/* View detail button */}
       <button
         onClick={onViewDetail}
-        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] text-sm text-gray-300 hover:text-white font-medium transition-all focus:outline-none focus:ring-2 focus:ring-red-500/30"
+        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/[0.15] text-sm text-gray-300 hover:text-white font-medium transition-all focus:outline-none focus:ring-2 focus:ring-brand.red/30"
       >
         {t("insurance.card_view_detail")}
       </button>
@@ -379,7 +380,7 @@ function EmptyPolicies({
       <p className="text-sm text-gray-500 max-w-sm mx-auto mb-6">{body}</p>
       <button
         onClick={onCta}
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors"
+        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand.red hover:bg-brand.redHover text-white text-sm font-medium transition-colors"
       >
         <Plus className="w-4 h-4" />
         {ctaLabel}
