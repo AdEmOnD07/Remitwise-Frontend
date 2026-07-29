@@ -8,6 +8,8 @@ import TransactionHistorySearchInput from "./components/transaction-history-sear
 import Button from "./components/transaction-history-button";
 import WidgetEmptyState from "@/components/ui/WidgetEmptyState";
 import { TransactionItem } from "@/lib/remittance/horizon";
+import { getTransactionHistory } from "@/lib/api/transactionHistoryClient";
+import { ApiClientError } from "@/lib/client/apiClient";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useSeo } from "@/lib/hooks/useSeo";
@@ -113,21 +115,11 @@ const TransactionHistoryPage = () => {
         }
         setError(null);
 
-        const params = new URLSearchParams();
-        params.append("limit", "50");
-        if (currentCursor && !reset) {
-          params.append("cursor", currentCursor);
-        }
-        if (statusFilter !== "all") {
-          params.append("status", statusFilter);
-        }
-
-        const response = await fetch(`/api/v1/remittance/history?${params}`);
-        if (!response.ok) {
-          throw new Error(t("transactionHistory.alerts.fetchFailed"));
-        }
-
-        const data = await response.json();
+        const data = await getTransactionHistory({
+          limit: 50,
+          cursor: currentCursor && !reset ? currentCursor : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        });
 
         if (data.userAddress) {
           setUserAddress(data.userAddress);
@@ -143,9 +135,11 @@ const TransactionHistoryPage = () => {
         setHasMore(!!data.nextCursor);
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : t("transactionHistory.alerts.genericError"),
+          err instanceof ApiClientError
+            ? t("transactionHistory.alerts.fetchFailed")
+            : err instanceof Error
+              ? err.message
+              : t("transactionHistory.alerts.genericError"),
         );
       } finally {
         setLoading(false);
