@@ -11,6 +11,54 @@ Prefer these tokens before adding raw colors, spacing, focus rings, breakpoints,
 or animation values. If a new value is needed, add it to the token layer first
 and document its semantic role here in the same PR.
 
+## Theme-Switching Architecture
+
+This section documents how a `ThemePreference` (`"system" | "light" | "dark"`)
+actually gets from storage to the rendered page. The token catalog above is
+*what* the tokens are; this is *how* the app picks which values apply.
+
+### The moving parts
+
+- **`lib/config/theme.ts`** — the `ThemePreference` type, the
+  `THEME_STORAGE_KEY` (`"theme-preference"`) it's persisted under in
+  `localStorage`, and the `isThemePreference` guard used to validate whatever
+  comes back out of storage (never trust it blindly -- it can be corrupted,
+  stale from an older schema, or absent).
+- **`lib/context/ThemeContext.tsx`** — `ThemeProvider`/`useTheme`. Owns the
+  current preference in React state, seeded from `localStorage` on mount, and
+  exposes `setTheme` (writes through to `localStorage` and updates state).
+- **The `<html>` element's class list** — `.dark` / `.light` (or neither, for
+  the OS-driven case). This, not React state, is what the CSS custom
+  properties in `:root` / `html.dark` / `html.light` actually key off of. See
+  `applyThemePreference()` in `ThemeContext.tsx`.
+- **The inline script in `app/layout.tsx`** — a *second*, hand-duplicated copy
+  of the same class-resolution logic as `applyThemePreference`, injected as a
+  raw `<script>` and run before React hydrates.
+
+### Why there are two copies of the same logic
+
+The inline script in `app/layout.tsx` exists purely to avoid a flash of the
+wrong theme: without it, the page would first paint with no theme class (the
+server has no access to `localStorage`), then flip to the right one only
+once `ThemeProvider`'s effect runs after hydration. Running the class
+resolution synchronously, before paint, eliminates that flash.
+
+This means `app/layout.tsx`'s inline script and `ThemeContext.tsx`'s
+`applyThemePreference` **must be kept in sync by hand** -- there is no shared
+module between them (the inline script can't `import` anything; it has to be
+a self-contained string). If you change how a preference resolves to a class
+in one, change it in the other in the same PR, or the pre-hydration paint and
+the post-hydration state will disagree.
+
+### `"system"` stays live
+
+Choosing `"system"` doesn't just resolve `prefers-color-scheme` once.
+`ThemeContext.tsx`'s effect subscribes to the media query's `change` event
+for as long as `theme === "system"`, so toggling the OS theme while the app
+is open updates the page immediately, with no reload. Switching away from
+`"system"` unsubscribes (the effect's cleanup runs on the next `theme`
+change).
+
 ## CSS Custom Properties
 
 All current CSS custom properties are declared in `app/globals.css`.
