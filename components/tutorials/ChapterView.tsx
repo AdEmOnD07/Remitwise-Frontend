@@ -9,6 +9,11 @@ import {
   ChevronRight,
   Lock,
 } from "lucide-react";
+import {
+  getTutorialProgress,
+  saveTutorialProgress,
+  type TutorialProgress,
+} from "@/lib/api/tutorials";
 
 type Props = {
   tutorialId: string;
@@ -22,10 +27,6 @@ const STORAGE_KEY = (tutorialId: string) =>
   `remitwise:tutorial:${tutorialId}:progress`;
 
 const defaultCheckpoints = [false, false, false];
-
-interface TutorialProgress {
-  chapters: Record<string, { checkpoints: boolean[] }>;
-}
 
 export default function ChapterView({
   tutorialId,
@@ -43,22 +44,16 @@ export default function ChapterView({
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        const response = await fetch(`/api/v1/tutorials/${tutorialId}/progress`);
-        if (response.ok) {
-          const data: TutorialProgress = await response.json();
-          const chapters = data?.chapters ?? {};
-          setSavedChapters(chapters);
-          if (chapters[chapterId]?.checkpoints) {
-            setCheckpoints(chapters[chapterId].checkpoints);
-          } else {
-            setCheckpoints(defaultCheckpoints);
-          }
-          // Sync to localStorage as backup
-          localStorage.setItem(STORAGE_KEY(tutorialId), JSON.stringify(data));
+        const data = await getTutorialProgress(tutorialId);
+        const chapters = data?.chapters ?? {};
+        setSavedChapters(chapters);
+        if (chapters[chapterId]?.checkpoints) {
+          setCheckpoints(chapters[chapterId].checkpoints);
         } else {
-          // Fallback to localStorage if server request fails
-          throw new Error("Server request failed");
+          setCheckpoints(defaultCheckpoints);
         }
+        // Sync to localStorage as backup
+        localStorage.setItem(STORAGE_KEY(tutorialId), JSON.stringify(data));
       } catch (e) {
         // Fallback to localStorage
         try {
@@ -91,20 +86,12 @@ export default function ChapterView({
         localStorage.setItem(STORAGE_KEY(tutorialId), JSON.stringify(base));
         setSavedChapters(base.chapters);
 
-        // Then sync to server (async)
-        try {
-          const response = await fetch(`/api/v1/tutorials/${tutorialId}/progress`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(base),
-          });
-          if (response.ok) {
-            const data: TutorialProgress = await response.json();
-            setSavedChapters(data.chapters);
-          }
-        } catch (serverError) {
-          // Server sync failed, but localStorage save succeeded
-          console.error("Failed to sync progress to server:", serverError);
+        // Then sync to server (async) -- saveTutorialProgress resolves to
+        // null rather than throwing on failure, so localStorage stays the
+        // source of truth if the sync doesn't land.
+        const data = await saveTutorialProgress(tutorialId, base);
+        if (data) {
+          setSavedChapters(data.chapters);
         }
       } catch (e) {
         // ignore write errors
