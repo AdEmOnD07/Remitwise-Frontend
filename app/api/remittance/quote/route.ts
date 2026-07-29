@@ -32,6 +32,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { validatedRoute } from "@/lib/auth/middleware";
 import { jsonError } from "@/lib/api/types";
+import { fitsInI128, MAX_I128_MAJOR_UNITS } from "@/lib/utils/i128";
 
 
 /**
@@ -41,7 +42,10 @@ import { jsonError } from "@/lib/api/types";
 const quoteSchema = z.object({
   amount: z.coerce
     .number()
-    .gt(0, "amount must be greater than 0"),
+    .gt(0, "amount must be greater than 0")
+    .refine(fitsInI128, {
+      message: `amount must not exceed ${MAX_I128_MAJOR_UNITS} (overflows the on-chain i128 amount type)`,
+    }),
   currency: z
     .string()
     .length(3, "currency must be a 3-letter ISO code")
