@@ -226,6 +226,8 @@ See [API Routes Documentation](./docs/API_ROUTES.md) for details on authenticati
 
 For authenticated browser-side requests, use the shared client API layer documented in [docs/client-api.md](docs/client-api.md). That guide covers when to use `apiClient` instead of raw `fetch`, the `401 -> refresh -> retry once` flow, session-expiry UI surfacing, and logout behavior.
 
+Form input is validated with Zod schemas kept in `lib/validation/*.ts`, separate from the form components. See [docs/zod-form-composition.md](docs/zod-form-composition.md) for the convention: where the schema lives, how it reports errors, and how a component wires it up.
+
 Route-level page titles now use a shared deep-link heading pattern. Use the shared heading primitive with a stable route-specific id whenever you add or update a primary page title. See [docs/page-heading-deeplinks.md](docs/page-heading-deeplinks.md).
 
 ## Per-Route SEO Metadata (`useSeo`)
