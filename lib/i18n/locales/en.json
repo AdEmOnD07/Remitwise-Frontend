@@ -151,5 +151,10 @@
       "dateLabel": "Target date",
       "iconLabel": "Choose an icon"
     }
+  },
+  "settings": {
+    "profile": {
+      "phone_invalid": "Enter a valid phone number, including country code (e.g. +1 555 123 4567)."
+    }
   }
 }

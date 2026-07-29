@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { User } from "lucide-react";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useAutosave } from "@/lib/hooks/useAutosave";
+import { isValidProfilePhone } from "@/lib/validation/phone";
 import {
   SectionCard,
   SectionHeader,
@@ -17,6 +18,7 @@ export function ProfileSection() {
   const [name, setName] = useState("Amara Osei");
   const [email, setEmail] = useState("amara@example.com");
   const [phone, setPhone] = useState("+234 801 234 5678");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const onSave = useCallback(async () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -36,6 +38,14 @@ export function ProfileSection() {
 
   const handlePhoneChange = (value: string) => {
     setPhone(value);
+
+    // Reject saving an invalid number, but don't nag the user while
+    // they're still mid-edit of an otherwise-valid international number.
+    if (!isValidProfilePhone(value)) {
+      setPhoneError(t("settings.profile.phone_invalid"));
+      return;
+    }
+    setPhoneError(null);
     triggerSave();
   };
 
@@ -95,6 +105,11 @@ export function ProfileSection() {
             onChange={handlePhoneChange}
             placeholderKey="settings.profile.phone_placeholder"
           />
+          {phoneError && (
+            <p role="alert" className="mt-1.5 text-xs text-red-600 dark:text-red-400">
+              {phoneError}
+            </p>
+          )}
         </FieldRow>
         <FieldRow
           labelKey="settings.profile.stellar_key_label"

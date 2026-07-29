@@ -151,5 +151,10 @@
       "dateLabel": "Fecha objetivo",
       "iconLabel": "Elige un icono"
     }
+  },
+  "settings": {
+    "profile": {
+      "phone_invalid": "Introduce un número de teléfono válido, incluyendo el código de país (p. ej. +1 555 123 4567)."
+    }
   }
 }
