@@ -59,6 +59,16 @@ export const MOCK_TREND_DATA: TrendDataPoint[] = [
 const AXIS_COLOR  = '#6b7280'
 const GRID_COLOR  = 'rgba(255,255,255,0.06)'
 
+/**
+ * A negative `left` margin here previously clipped the first X-axis tick
+ * label: it shifts the plot area's left edge past the container's actual
+ * left edge, so the leftmost tick (centered under the first data point,
+ * kept visible by `interval="preserveStartEnd"`) renders partially outside
+ * the visible chart area. `left: 0` lets the plot area start at the
+ * container's own edge instead.
+ */
+export const CHART_MARGIN = { top: 8, right: 4, bottom: 0, left: 0 };
+
 // ── Custom tooltip ────────────────────────────────────────────────────────────
 interface CustomTooltipProps {
   active?: boolean
@@ -108,23 +118,19 @@ function RemittanceTrendChartInner({
   const prev    = useMemo(() => data[data.length - 2]?.amount ?? latest, [data, latest])
   const trend   = latest >= prev ? 'up' : 'down'
 
-  // Generate accessible label and summary
-  const summaryItems = useMemo(
-    () =>
-      data.map(
-        (point) =>
-          `${point.date}: $${point.amount.toLocaleString()} (${point.transactions} tx)`,
-      ),
+  // Generate accessible label and summary. These call the imported
+  // generateTrendChartLabel/generateTrendChartSummary (previously the call
+  // sites here referenced undefined buildChartImageLabel/buildChartSummary
+  // names left over from a prior refactor, which threw a ReferenceError on
+  // every render).
+  const chartLabel = useMemo(
+    () => generateTrendChartLabel('Remittance Trend', data, ['amount']),
     [data],
   )
-
-  const t = useMemo(() => {
-    return (_path: string, options?: string | Record<string, unknown>) =>
-      typeof options === 'string' ? options : _path
-  }, [])
-
-  const chartLabel = useMemo(() => buildChartImageLabel('Remittance Trend', summaryItems, t), [summaryItems, t])
-  const chartSummary = useMemo(() => buildChartSummary(summaryItems, t), [summaryItems, t])
+  const chartSummary = useMemo(
+    () => generateTrendChartSummary(data, ['amount']),
+    [data],
+  )
 
   if (isEmpty) {
     return (
@@ -198,7 +204,7 @@ function RemittanceTrendChartInner({
         <ResponsiveContainer width="100%" height={220}>
           <AreaChart
             data={data}
-            margin={{ top: 8, right: 4, bottom: 0, left: -16 }}
+            margin={CHART_MARGIN}
             aria-hidden="true"
           >
             <defs>
