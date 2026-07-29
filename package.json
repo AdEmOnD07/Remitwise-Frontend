@@ -6,6 +6,7 @@
     "generate:types": "openapi-typescript ./openapi.yaml --output ./src/api/types.ts",
     "prebuild": "npm run generate:types",
     "dev": "next dev",
+    "dev:reset": "node scripts/dev-reset.mjs",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
