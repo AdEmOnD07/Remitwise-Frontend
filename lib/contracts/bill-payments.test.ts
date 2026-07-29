@@ -3,6 +3,8 @@ import {
     buildCreateBillTx,
     buildPayBillTx,
     buildCancelBillTx,
+    getTotalUnpaid,
+    getUnpaidBills,
 } from './bill-payments'
 import * as StellarSdk from '@stellar/stellar-sdk'
 
@@ -108,6 +110,32 @@ describe('bill-payments helper', () => {
 
         it('throws error for missing billId', async () => {
             await expect(buildCancelBillTx(validPublicKey, '')).rejects.toThrow('invalid-billId')
+        })
+    })
+
+    describe('getTotalUnpaid', () => {
+        it('sums the amounts of unpaid bills fetched internally when no list is passed', async () => {
+            const [bills, total] = await Promise.all([
+                getUnpaidBills(validPublicKey),
+                getTotalUnpaid(validPublicKey),
+            ])
+            const expected = bills.reduce((sum, bill) => sum + bill.amount, 0)
+            expect(total).toBe(expected)
+        })
+
+        it('reuses an already-fetched bills list instead of re-fetching', async () => {
+            const bills = await getUnpaidBills(validPublicKey)
+            const expected = bills.reduce((sum, bill) => sum + bill.amount, 0)
+
+            // Passing the pre-fetched list must produce the same total as
+            // fetching internally, without calling getUnpaidBills again.
+            const total = await getTotalUnpaid(validPublicKey, bills)
+            expect(total).toBe(expected)
+        })
+
+        it('returns 0 for an explicitly empty bills list, without fetching', async () => {
+            const total = await getTotalUnpaid(validPublicKey, [])
+            expect(total).toBe(0)
         })
     })
 })

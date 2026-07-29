@@ -192,7 +192,15 @@ export async function getUnpaidBills(owner: string): Promise<Bill[]> {
   return (await getAllBills(owner)).filter((bill) => bill.status !== "paid");
 }
 
-export async function getTotalUnpaid(owner: string): Promise<number> {
-  const bills = await getUnpaidBills(owner);
-  return bills.reduce((sum, bill) => sum + bill.amount, 0);
+/**
+ * Sums the amount of every unpaid bill for `owner`.
+ *
+ * Accepts an already-fetched `bills` list so callers that also need the
+ * list itself (e.g. `GET /api/bills/total-unpaid`, which returns both the
+ * total and the bills) can fetch once and pass it in here, instead of this
+ * function independently re-fetching the same unpaid bills a second time.
+ */
+export async function getTotalUnpaid(owner: string, bills?: Bill[]): Promise<number> {
+  const unpaid = bills ?? (await getUnpaidBills(owner));
+  return unpaid.reduce((sum, bill) => sum + bill.amount, 0);
 }
