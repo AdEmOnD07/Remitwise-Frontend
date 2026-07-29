@@ -15,9 +15,7 @@ import type {
   Transaction,
   TransactionStatus,
 } from "@/components/Dashboard/TransactionHistoryItem";
-// @ts-ignore
-import { FixedSizeList } from "react-window";
-const List = FixedSizeList as any;
+import { FixedSizeList as List } from "react-window";
 
 type Direction = "all" | "sent" | "received";
 
@@ -38,13 +36,13 @@ function getGroupKey(
   return "earlier";
 }
 
-interface VirtualRowProps {
+export interface VirtualRowProps {
   index: number;
   style: React.CSSProperties;
   data: Transaction[];
 }
 
-const TransactionVirtualRow = ({ index, style, data }: VirtualRowProps) => {
+export const TransactionVirtualRow = ({ index, style, data }: VirtualRowProps) => {
   const tx = data[index];
   return (
     <div style={style}>
