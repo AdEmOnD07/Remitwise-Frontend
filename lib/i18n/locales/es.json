@@ -151,5 +151,10 @@
       "dateLabel": "Fecha objetivo",
       "iconLabel": "Elige un icono"
     }
+  },
+  "settings": {
+    "wallet": {
+      "payout_iban_invalid": "Introduce un IBAN válido (p. ej. DE89 3704 0044 0532 0130 00)."
+    }
   }
 }
