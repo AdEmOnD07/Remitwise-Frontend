@@ -1,5 +1,4 @@
 import * as Sentry from "@sentry/nextjs";
-import { initializeWebhookHandlers } from "./lib/webhooks/init";
 
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -31,7 +30,12 @@ export async function register() {
         },
     });
 
-    // Initialize webhook handlers
+    // Initialize webhook handlers. Dynamically imported (like
+    // validateSessionConfig above) so this module -- which pulls in
+    // Prisma via lib/webhooks/processor.ts -> lib/admin/audit.ts -- is
+    // never bundled into the Edge runtime half of this file, where
+    // Prisma can't run.
+    const { initializeWebhookHandlers } = await import('./lib/webhooks/init');
     initializeWebhookHandlers();
 
     console.log('Instrumentation: Sentry (Server), Session Config, and Webhooks initialized');
