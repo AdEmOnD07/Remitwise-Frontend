@@ -193,6 +193,19 @@ To run the Playwright end-to-end tests for authentication and protected routes:
 npm run test:e2e
 ```
 
+### Storybook
+
+Primitive components (e.g. `Toast`, `Nav`, the `i18n` formatters) have stories
+under `components/**/*.stories.tsx`, viewable in isolation with Storybook:
+
+```bash
+# Start the local Storybook dev server on http://localhost:6006
+npm run storybook
+
+# Build a static Storybook (output: storybook-static/)
+npm run build-storybook
+```
+
 ## Project Structure
 
 ```
