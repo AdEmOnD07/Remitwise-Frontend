@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { User } from "lucide-react";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useAutosave } from "@/lib/hooks/useAutosave";
+import { validateProfileForm, type ProfileFormValidationResult } from "@/lib/validation/profile";
 import {
   SectionCard,
   SectionHeader,
@@ -17,6 +18,7 @@ export function ProfileSection() {
   const [name, setName] = useState("Amara Osei");
   const [email, setEmail] = useState("amara@example.com");
   const [phone, setPhone] = useState("+234 801 234 5678");
+  const [errors, setErrors] = useState<ProfileFormValidationResult["errors"]>({});
 
   const onSave = useCallback(async () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -24,19 +26,30 @@ export function ProfileSection() {
 
   const { saveState, triggerSave } = useAutosave(onSave);
 
+  // Re-validates the full form on every field change and only triggers the
+  // (auto)save when it passes -- an invalid field blocks the whole save
+  // rather than persisting a partially-invalid profile.
+  const revalidateAndSave = (next: { name: string; email: string; phone: string }) => {
+    const result = validateProfileForm(next);
+    setErrors(result.errors);
+    if (result.isValid) {
+      triggerSave();
+    }
+  };
+
   const handleNameChange = (value: string) => {
     setName(value);
-    triggerSave();
+    revalidateAndSave({ name: value, email, phone });
   };
 
   const handleEmailChange = (value: string) => {
     setEmail(value);
-    triggerSave();
+    revalidateAndSave({ name, email: value, phone });
   };
 
   const handlePhoneChange = (value: string) => {
     setPhone(value);
-    triggerSave();
+    revalidateAndSave({ name, email, phone: value });
   };
 
   return (
@@ -73,6 +86,11 @@ export function ProfileSection() {
             onChange={handleNameChange}
             placeholderKey="settings.profile.full_name_placeholder"
           />
+          {errors.name && (
+            <p className="mt-1 text-xs text-red-500" role="alert">
+              {t(`errors.${errors.name}`)}
+            </p>
+          )}
         </FieldRow>
         <FieldRow
           labelKey="settings.profile.email_label"
@@ -84,6 +102,11 @@ export function ProfileSection() {
             onChange={handleEmailChange}
             placeholderKey="settings.profile.email_placeholder"
           />
+          {errors.email && (
+            <p className="mt-1 text-xs text-red-500" role="alert">
+              {t(`errors.${errors.email}`)}
+            </p>
+          )}
         </FieldRow>
         <FieldRow
           labelKey="settings.profile.phone_label"
@@ -95,6 +118,11 @@ export function ProfileSection() {
             onChange={handlePhoneChange}
             placeholderKey="settings.profile.phone_placeholder"
           />
+          {errors.phone && (
+            <p className="mt-1 text-xs text-red-500" role="alert">
+              {t(`errors.${errors.phone}`)}
+            </p>
+          )}
         </FieldRow>
         <FieldRow
           labelKey="settings.profile.stellar_key_label"
