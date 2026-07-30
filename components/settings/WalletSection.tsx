@@ -4,7 +4,7 @@ import { useState, useCallback, type ChangeEvent } from "react";
 import { Wallet } from "lucide-react";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useAutosave } from "@/lib/hooks/useAutosave";
-import { useSafeReload } from "@/lib/hooks/useSafeReload";
+import { isValidIban } from "@/lib/validation/iban";
 import {
   SectionCard,
   SectionHeader,
@@ -25,6 +25,8 @@ export function WalletSection() {
   const [rpcUrl, setRpcUrl] = useState("https://soroban-testnet.stellar.org");
   const [autoSplit, setAutoSplit] = useState(true);
   const [currency, setCurrency] = useState("USDC");
+  const [payoutIban, setPayoutIban] = useState("");
+  const [payoutIbanError, setPayoutIbanError] = useState<string | null>(null);
 
   const onSave = useCallback(async () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -50,6 +52,19 @@ export function WalletSection() {
 
   const handleNetworkChange = (net: string) => {
     setNetwork(net);
+    triggerSave();
+  };
+
+  const handlePayoutIbanChange = (value: string) => {
+    setPayoutIban(value);
+
+    // Reject saving an invalid IBAN, but don't nag while the field is
+    // simply empty (it's optional) or still mid-edit of a valid one.
+    if (!isValidIban(value)) {
+      setPayoutIbanError(t("settings.wallet.payout_iban_invalid"));
+      return;
+    }
+    setPayoutIbanError(null);
     triggerSave();
   };
 
@@ -116,6 +131,21 @@ export function WalletSection() {
             <option value="GHS">GHS</option>
             <option value="KES">KES</option>
           </select>
+        </FieldRow>
+        <FieldRow
+          labelKey="settings.wallet.payout_iban_label"
+          hintKey="settings.wallet.payout_iban_hint"
+        >
+          <TextInput
+            value={payoutIban}
+            onChange={handlePayoutIbanChange}
+            placeholderKey="settings.wallet.payout_iban_placeholder"
+          />
+          {payoutIbanError && (
+            <p role="alert" className="mt-1.5 text-xs text-red-600 dark:text-red-400">
+              {payoutIbanError}
+            </p>
+          )}
         </FieldRow>
       </div>
       <SaveButton labelKey="settings.save_changes" saveState={saveState} />
