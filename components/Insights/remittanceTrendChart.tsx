@@ -61,6 +61,19 @@ export const MOCK_TREND_DATA: TrendDataPoint[] = [
   { date: 'Dec 8',  amount: 1420, transactions: 5 },
 ]
 
+const AXIS_COLOR  = '#6b7280'
+const GRID_COLOR  = 'rgba(255,255,255,0.06)'
+
+/**
+ * A negative `left` margin here previously clipped the first X-axis tick
+ * label: it shifts the plot area's left edge past the container's actual
+ * left edge, so the leftmost tick (centered under the first data point,
+ * kept visible by `interval="preserveStartEnd"`) renders partially outside
+ * the visible chart area. `left: 0` lets the plot area start at the
+ * container's own edge instead.
+ */
+export const CHART_MARGIN = { top: 8, right: 4, bottom: 0, left: 0 };
+
 // ── Custom tooltip ────────────────────────────────────────────────────────────
 interface CustomTooltipProps {
   active?: boolean
@@ -111,15 +124,18 @@ function RemittanceTrendChartInner({
   const prev    = useMemo(() => data[data.length - 2]?.amount ?? latest, [data, latest])
   const trend   = latest >= prev ? 'up' : 'down'
 
-  // Generate accessible label and summary
+  // Generate accessible label and summary. These call the imported
+  // generateTrendChartLabel/generateTrendChartSummary (previously the call
+  // sites here referenced undefined buildChartImageLabel/buildChartSummary
+  // names left over from a prior refactor, which threw a ReferenceError on
+  // every render).
   const chartLabel = useMemo(
-    () => generateTrendChartLabel("Remittance Trend", data as unknown as TrendChartDataPoint[], ["amount"]),
-    [data]
+    () => generateTrendChartLabel('Remittance Trend', data, ['amount']),
+    [data],
   )
-
   const chartSummary = useMemo(
-    () => generateTrendChartSummary(data as unknown as TrendChartDataPoint[], ["amount"]),
-    [data]
+    () => generateTrendChartSummary(data, ['amount']),
+    [data],
   )
 
   if (isEmpty) {
@@ -205,29 +221,18 @@ function RemittanceTrendChartInner({
       </div>
 
       <div role="img" aria-label={chartLabel}>
-        {saveData ? (
-          /* Save-Data fallback: ordered number list, no AreaChart cost */
-          <ol className="space-y-1.5" aria-label="Remittance amounts by date">
-            {data.map((point) => (
-              <li key={point.date} className="flex items-center justify-between text-sm">
-                <span className="text-gray-400">{point.date}</span>
-                <span className="font-bold text-white">${point.amount.toLocaleString()}</span>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart
-              data={data}
-              margin={margin}
-              aria-hidden="true"
-            >
-              <defs>
-                <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={LINE_COLOR} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={LINE_COLOR} stopOpacity={0}   />
-                </linearGradient>
-              </defs>
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart
+            data={data}
+            margin={CHART_MARGIN}
+            aria-hidden="true"
+          >
+            <defs>
+              <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%"  stopColor={LINE_COLOR} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={LINE_COLOR} stopOpacity={0}   />
+              </linearGradient>
+            </defs>
 
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
 

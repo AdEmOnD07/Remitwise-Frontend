@@ -104,8 +104,8 @@ export default function SettingsPage() {
             headingClassName="shrink-0 text-base font-semibold text-gray-900 dark:text-white"
           >
             {t("settings.page_title")}
-          </PageHeadingLink>
-          {/* Mobile: horizontal scrollable nav pills with roving tabindex */}
+          </h1>
+          {/* Mobile: horizontal scrollable nav pills */}
           <nav
             ref={mobileNavRef}
             aria-label={t("settings.nav_aria_label")}

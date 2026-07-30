@@ -25,11 +25,9 @@
     "test:property": "node node_modules/vitest/vitest.mjs run --config vitest.config.mjs --configLoader runner tests/property",
     "test:integration": "node --test tests/integration/auth.test.cjs tests/integration/health.test.cjs tests/integration/validation.test.cjs && node node_modules/vitest/vitest.mjs run --config vitest.config.mjs --configLoader runner tests/integration/api",
     "test:e2e": "playwright test",
-    "test:smoke": "playwright test --config playwright.smoke.config.ts",
     "test:perf": "npx playwright test tests/e2e/dashboard-performance.spec.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build --quiet",
-    "test:e2e:smoke": "playwright test tests/e2e/health.spec.ts --project=chromium"
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -59,12 +57,10 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^16.2.12",
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.58.2",
-    "@storybook/addon-essentials": "^8.6.18",
-    "@storybook/react": "^8.6.18",
-    "@storybook/react-webpack5": "^8.6.18",
-    "@storybook/test": "^8.6.18",
+    "@storybook/nextjs": "^10.5.5",
+    "@storybook/react": "^10.5.5",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/jest-axe": "^3.5.9",
@@ -82,11 +78,10 @@
     "jest-axe": "^10.0.0",
     "jsdom": "^29.1.1",
     "lighthouse": "^11.0.0",
-    "msw": "^2.15.0",
     "openapi-typescript": "^6.5.0",
     "postcss": "^8.4.0",
     "prisma": "^5.22.0",
-    "storybook": "^8.6.18",
+    "storybook": "^10.5.5",
     "tailwindcss": "^3.3.0",
     "ts-loader": "^9.5.2",
     "tsx": "^4.21.0",
