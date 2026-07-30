@@ -32,7 +32,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { validatedRoute } from "@/lib/auth/middleware";
 import { jsonError } from "@/lib/api/types";
-import { hasAtMostDecimals } from "@/lib/utils/decimal-places";
+import { fitsInI128, MAX_I128_MAJOR_UNITS } from "@/lib/utils/i128";
 
 const MAX_AMOUNT_DECIMALS = 2;
 
@@ -54,8 +54,8 @@ const quoteSchema = z.object({
   amount: z.coerce
     .number()
     .gt(0, "amount must be greater than 0")
-    .refine((value) => hasAtMostDecimals(value, MAX_AMOUNT_DECIMALS), {
-      message: `amount must have at most ${MAX_AMOUNT_DECIMALS} decimal places`,
+    .refine(fitsInI128, {
+      message: `amount must not exceed ${MAX_I128_MAJOR_UNITS} (overflows the on-chain i128 amount type)`,
     }),
   currency: z
     .string()

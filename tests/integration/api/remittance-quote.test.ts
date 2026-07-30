@@ -79,9 +79,9 @@ describe("Remittance quote API", () => {
     });
   });
 
-  it("returns 400 for an amount with more than 2 decimal places", async () => {
+  it("returns 400 for an amount that would overflow the on-chain i128 type", async () => {
     const req = new NextRequest(
-      "http://localhost/api/remittance/quote?amount=100.555&currency=USD&toCurrency=PHP",
+      "http://localhost/api/remittance/quote?amount=9e32&currency=USD&toCurrency=PHP",
       { method: "GET" }
     );
 
