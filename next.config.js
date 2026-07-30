@@ -1,8 +1,18 @@
 const { withSentryConfig } = require("@sentry/nextjs");
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Issue #1437 – the bundle-size measurement workflow builds with
+  // CI_SKIP_TYPECHECK=1: bundle size is orthogonal to the repo's known
+  // type-error backlog (tracked separately), and measurement must not be
+  // hostage to it. Default builds still typecheck.
+  typescript: {
+    ignoreBuildErrors: process.env.CI_SKIP_TYPECHECK === "1",
+  },
 };
 
 const rewrites = async () => {
@@ -45,7 +55,9 @@ const sentryWebpackPluginOptions = {
   disableLogger: true,
 };
 
-module.exports = withSentryConfig(
-  { ...nextConfig, rewrites, redirects },
-  sentryWebpackPluginOptions
+module.exports = withBundleAnalyzer(
+  withSentryConfig(
+    { ...nextConfig, rewrites, redirects },
+    sentryWebpackPluginOptions
+  )
 );
