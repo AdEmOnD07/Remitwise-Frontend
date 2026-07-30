@@ -34,6 +34,7 @@ import { validatedRoute } from "@/lib/auth/middleware";
 import { jsonError } from "@/lib/api/types";
 import { fitsInI128, MAX_I128_MAJOR_UNITS } from "@/lib/utils/i128";
 
+const MAX_AMOUNT_DECIMALS = 2;
 
 /**
  * Coerce query-string strings into the right types.
