@@ -24,7 +24,8 @@ export function ProfileSection() {
     await new Promise((resolve) => setTimeout(resolve, 300));
   }, []);
 
-  const { saveState, triggerSave } = useAutosave(onSave);
+  const { saveState, isDirty, triggerSave } = useAutosave(onSave);
+  useSafeReload(isDirty);
 
   // Re-validates the full form on every field change and only triggers the
   // (auto)save when it passes -- an invalid field blocks the whole save
