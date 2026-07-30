@@ -9,16 +9,12 @@ import Button from "./components/transaction-history-button";
 import TransactionHistoryLoadMore from "./components/transaction-history-load-more";
 import WidgetEmptyState from "@/components/ui/WidgetEmptyState";
 import { TransactionItem } from "@/lib/remittance/horizon";
+import { getTransactionHistory } from "@/lib/api/transactionHistoryClient";
+import { ApiClientError } from "@/lib/client/apiClient";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useSeo } from "@/lib/hooks/useSeo";
-import { useInfiniteScrollObserver } from "@/lib/hooks/useInfiniteScrollObserver";
-import { useCursorPagination } from "@/lib/hooks/useCursorPagination";
-import {
-  serializeToCsv,
-  serializeToJson,
-  getExportFilename,
-} from "@/lib/utils/export-serializer";
+import { sanitizeSearchQuery } from "@/lib/sanitize";
 import type {
   Transaction,
   TransactionStatus,
@@ -29,18 +25,13 @@ type Direction = "all" | "sent" | "received";
 
 type GroupKey = "today" | "yesterday" | "earlier";
 
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function getGroupKey(
+export function getGroupKey(
   date: Date,
   todayStart: Date,
   yesterdayStart: Date,
 ): GroupKey {
-  const d = startOfDay(date);
-  if (d.getTime() === todayStart.getTime()) return "today";
-  if (d.getTime() === yesterdayStart.getTime()) return "yesterday";
+  if (isSameDay(date, todayStart)) return "today";
+  if (isSameDay(date, yesterdayStart)) return "yesterday";
   return "earlier";
 }
 
@@ -69,6 +60,13 @@ const TransactionHistoryPage = () => {
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
+  // Strips control characters, collapses whitespace, and caps length before
+  // the raw search term is used to filter, rendered back as a filter chip,
+  // or (in the future) synced to the URL.
+  const sanitizedSearch = useMemo(
+    () => sanitizeSearchQuery(debouncedSearch),
+    [debouncedSearch],
+  );
   const [statusFilter, setStatusFilter] = useState<
     "all" | "completed" | "failed" | "pending"
   >("all");
@@ -83,11 +81,7 @@ const TransactionHistoryPage = () => {
   useDateRangeValidation(dateFrom, dateTo, setDateFrom, setDateTo);
 
   const todayStart = useMemo(() => startOfDay(new Date()), []);
-  const yesterdayStart = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return startOfDay(d);
-  }, []);
+  const yesterdayStart = useMemo(() => startOfDay(subDays(new Date(), 1)), []);
 
   const groupLabels: Record<GroupKey, { label: string; helper: string }> =
     useMemo(
@@ -108,12 +102,46 @@ const TransactionHistoryPage = () => {
       [t],
     );
 
-  const fetchTransactionsPage = useCallback(
-    async (currentCursor: string | undefined, reset: boolean) => {
-      const params = new URLSearchParams();
-      params.append("limit", "50");
-      if (currentCursor && !reset) {
-        params.append("cursor", currentCursor);
+  const fetchTransactions = useCallback(
+    async (currentCursor?: string, reset = false) => {
+      try {
+        if (reset) {
+          setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
+        setError(null);
+
+        const data = await getTransactionHistory({
+          limit: 50,
+          cursor: currentCursor && !reset ? currentCursor : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        });
+
+        if (data.userAddress) {
+          setUserAddress(data.userAddress);
+        }
+
+        if (reset) {
+          setTransactions(data.transactions || []);
+        } else {
+          setTransactions((prev) => [...prev, ...(data.transactions || [])]);
+        }
+
+        setCursor(data.nextCursor);
+        setHasMore(!!data.nextCursor);
+      } catch (err) {
+        setError(
+          err instanceof ApiClientError
+            ? t("transactionHistory.alerts.fetchFailed")
+            : err instanceof Error
+              ? err.message
+              : t("transactionHistory.alerts.genericError"),
+        );
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
+        setLoadingMore(false);
       }
       if (statusFilter !== "all") {
         params.append("status", statusFilter);
@@ -195,14 +223,14 @@ const TransactionHistoryPage = () => {
   }, []);
 
   const hasActiveFilters =
-    debouncedSearch.trim().length > 0 ||
+    sanitizedSearch.length > 0 ||
     statusFilter !== "all" ||
     directionFilter !== "all" ||
     dateFrom.length > 0 ||
     dateTo.length > 0;
 
   const filteredTransactions = useMemo(() => {
-    const query = debouncedSearch.trim().toLowerCase();
+    const query = sanitizedSearch.toLowerCase();
 
     return transactions.filter((tx) => {
       if (statusFilter !== "all") {
@@ -220,14 +248,13 @@ const TransactionHistoryPage = () => {
 
       if (dateFrom) {
         const txDate = new Date(tx.date);
-        const fromDate = new Date(dateFrom);
-        if (txDate < fromDate) return false;
+        const fromDate = startOfDay(new Date(dateFrom));
+        if (isBefore(txDate, fromDate)) return false;
       }
       if (dateTo) {
         const txDate = new Date(tx.date);
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (txDate > toDate) return false;
+        const toDate = endOfDay(new Date(dateTo));
+        if (isAfter(txDate, toDate)) return false;
       }
 
       if (query.length > 0) {
@@ -249,7 +276,7 @@ const TransactionHistoryPage = () => {
     });
   }, [
     transactions,
-    debouncedSearch,
+    sanitizedSearch,
     statusFilter,
     directionFilter,
     dateFrom,
@@ -588,11 +615,11 @@ const TransactionHistoryPage = () => {
                   onRemove={() => setDirectionFilter("all")}
                 />
               )}
-              {debouncedSearch.trim().length > 0 && (
+              {sanitizedSearch.length > 0 && (
                 <ActivePill
                   label={t("transactionHistory.activeFilters.search").replace(
                     "{{query}}",
-                    debouncedSearch,
+                    sanitizedSearch,
                   )}
                   onRemove={() => setSearchTerm("")}
                 />
