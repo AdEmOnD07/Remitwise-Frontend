@@ -39,6 +39,16 @@ import { fitsInI128, MAX_I128_MAJOR_UNITS } from "@/lib/utils/i128";
  * Coerce query-string strings into the right types.
  * `amount` arrives as a string from the URL — coerce to number first.
  */
+/** ISO-4217-like currency code: exactly 3 ASCII letters. */
+const currencyCode = z
+  .string()
+  .regex(/^[A-Za-z]{3}$/, "must be a 3-letter ISO currency code")
+  .toUpperCase();
+
+/** At most two decimal places (e.g. "10", "10.5", "10.50"). */
+const hasAtMostTwoDecimals = (n: number): boolean =>
+  Number.isFinite(n) && Math.round(n * 100) === n * 100;
+
 const quoteSchema = z.object({
   amount: z.coerce
     .number()
