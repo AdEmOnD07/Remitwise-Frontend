@@ -119,6 +119,30 @@
   "settings": {
     "profile": {
       "phone_invalid": "Introduce un número de teléfono válido, incluyendo el código de país (p. ej. +1 555 123 4567)."
+    },
+    "save_changes": "Guardar Cambios",
+    "preferences_saved_title": "Ajustes guardados",
+    "preferences_saved_description": "Tus preferencias han sido actualizadas.",
+    "save_error_title": "Error al guardar",
+    "wallet": {
+      "title": "Configuración de Billetera",
+      "description": "Configura tu billetera Stellar y preferencias de pago.",
+      "testnet": "Testnet",
+      "mainnet": "Mainnet",
+      "network_label": "Red",
+      "network_hint": "Selecciona la red Stellar a la que conectar.",
+      "soroban_rpc_label": "URL de Soroban RPC",
+      "soroban_rpc_hint": "El endpoint Soroban RPC para interacciones con contratos inteligentes.",
+      "soroban_rpc_placeholder": "https://soroban-testnet.stellar.org",
+      "auto_split_label": "División Automática",
+      "auto_split_toggle": "Habilitar división automática",
+      "auto_split_desc": "Asigna automáticamente las remesas recibidas entre gastos, ahorros, facturos y seguros.",
+      "default_currency_label": "Moneda por Defecto",
+      "default_currency_hint": "El activo por defecto para nuevas remesas.",
+      "payout_iban_label": "IBAN de Pago",
+      "payout_iban_hint": "El IBAN utilizado para conversiones de pago en fiat.",
+      "payout_iban_placeholder": "p. ej. DE89370400440532013000",
+      "payout_iban_invalid": "Por favor, introduce un IBAN válido."
     }
   }
 }
