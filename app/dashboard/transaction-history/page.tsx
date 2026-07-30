@@ -9,6 +9,8 @@ import Button from "./components/transaction-history-button";
 import TransactionHistoryLoadMore from "./components/transaction-history-load-more";
 import WidgetEmptyState from "@/components/ui/WidgetEmptyState";
 import { TransactionItem } from "@/lib/remittance/horizon";
+import { getTransactionHistory } from "@/lib/api/transactionHistoryClient";
+import { ApiClientError } from "@/lib/client/apiClient";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useSeo } from "@/lib/hooks/useSeo";
@@ -88,12 +90,46 @@ const TransactionHistoryPage = () => {
       [t],
     );
 
-  const fetchTransactionsPage = useCallback(
-    async (currentCursor: string | undefined, reset: boolean) => {
-      const params = new URLSearchParams();
-      params.append("limit", "50");
-      if (currentCursor && !reset) {
-        params.append("cursor", currentCursor);
+  const fetchTransactions = useCallback(
+    async (currentCursor?: string, reset = false) => {
+      try {
+        if (reset) {
+          setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
+        setError(null);
+
+        const data = await getTransactionHistory({
+          limit: 50,
+          cursor: currentCursor && !reset ? currentCursor : undefined,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        });
+
+        if (data.userAddress) {
+          setUserAddress(data.userAddress);
+        }
+
+        if (reset) {
+          setTransactions(data.transactions || []);
+        } else {
+          setTransactions((prev) => [...prev, ...(data.transactions || [])]);
+        }
+
+        setCursor(data.nextCursor);
+        setHasMore(!!data.nextCursor);
+      } catch (err) {
+        setError(
+          err instanceof ApiClientError
+            ? t("transactionHistory.alerts.fetchFailed")
+            : err instanceof Error
+              ? err.message
+              : t("transactionHistory.alerts.genericError"),
+        );
+      } finally {
+        setLoading(false);
+        setInitialLoading(false);
+        setLoadingMore(false);
       }
       if (statusFilter !== "all") {
         params.append("status", statusFilter);
