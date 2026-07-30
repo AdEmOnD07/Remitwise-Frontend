@@ -44,6 +44,17 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
   const [isDisclosureOpen, setIsDisclosureOpen] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(Date.now());
+  const isMountedRef = useRef(true);
+
+  // Tracks real unmount (as opposed to this effect's own pause/resume
+  // re-runs) so the pause/resume effect below can skip its state update
+  // once the toast is actually gone, rather than queuing a setRemaining
+  // call against an unmounted component on every dismissal.
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Determine if diagnostic details are available (only for error variant)
   const hasDiagnostics = 
@@ -71,6 +82,7 @@ export default function Toast({ toast, onDismiss }: ToastProps) {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
+      if (!isMountedRef.current) return;
       const elapsed = Date.now() - startTimeRef.current;
       setRemaining((prev) => Math.max(0, prev - elapsed));
     };

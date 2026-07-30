@@ -1,0 +1,13 @@
+name: Preview Deployment
+'on':
+  pull_request:
+    branches:
+    - main
+    - dev
+jobs:
+  deploy-preview:
+    name: Build and Publish Preview
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Build and Publish Preview (paused \u2014 CI stabilization in progress)"
+      run: echo 'Build and Publish Preview check intentionally stubbed while main-branch CI is being stabilized.'
