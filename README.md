@@ -135,6 +135,13 @@ Useful endpoints:
 - `GET /api/health`
 - `GET /api/dashboard`
 - `GET /api/remittance/quote?amountMinor=10000&currency=USD&toCurrency=NGN`
+- `POST /api/auth/nonce`, `POST /api/auth/login`, `POST /api/auth/logout`
+- `GET /api/transactions` — paginated list (supports `?limit=N`)
+- `GET /api/split` — active split allocations
+- `GET /api/goals` — savings goals list
+- `GET /api/bills` — bills list
+- `GET /api/insurance` — insurance policies list
+- `GET /api/family` — family members list
 
 Mock money values are returned as integer minor units, for example
 `amountMinor`, `feeMinor`, and `receiveAmountMinor`.
