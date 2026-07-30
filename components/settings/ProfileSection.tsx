@@ -27,14 +27,25 @@ export function ProfileSection() {
   const { saveState, isDirty, triggerSave } = useAutosave(onSave);
   useSafeReload(isDirty);
 
+  // Re-validates the full form on every field change and only triggers the
+  // (auto)save when it passes -- an invalid field blocks the whole save
+  // rather than persisting a partially-invalid profile.
+  const revalidateAndSave = (next: { name: string; email: string; phone: string }) => {
+    const result = validateProfileForm(next);
+    setErrors(result.errors);
+    if (result.isValid) {
+      triggerSave();
+    }
+  };
+
   const handleNameChange = (value: string) => {
     setName(value);
-    triggerSave();
+    revalidateAndSave({ name: value, email, phone });
   };
 
   const handleEmailChange = (value: string) => {
     setEmail(value);
-    triggerSave();
+    revalidateAndSave({ name, email: value, phone });
   };
 
   const handlePhoneChange = (value: string) => {
@@ -84,6 +95,11 @@ export function ProfileSection() {
             onChange={handleNameChange}
             placeholderKey="settings.profile.full_name_placeholder"
           />
+          {errors.name && (
+            <p className="mt-1 text-xs text-red-500" role="alert">
+              {t(`errors.${errors.name}`)}
+            </p>
+          )}
         </FieldRow>
         <FieldRow
           labelKey="settings.profile.email_label"
@@ -95,6 +111,11 @@ export function ProfileSection() {
             onChange={handleEmailChange}
             placeholderKey="settings.profile.email_placeholder"
           />
+          {errors.email && (
+            <p className="mt-1 text-xs text-red-500" role="alert">
+              {t(`errors.${errors.email}`)}
+            </p>
+          )}
         </FieldRow>
         <FieldRow
           labelKey="settings.profile.phone_label"

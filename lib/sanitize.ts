@@ -171,6 +171,35 @@ export function sanitizeObject(
   return sanitized;
 }
 
+/** Maximum length a search query is allowed to reach before being truncated. */
+const MAX_SEARCH_QUERY_LENGTH = 200;
+
+/**
+ * Sanitizes a free-text search query before it is used to filter data,
+ * rendered back into the page, or interpolated into a URL (e.g. a future
+ * `?q=` sync or an outbound API request).
+ *
+ * - Strips ASCII control characters (including newlines/tabs), which have no
+ *   legitimate place in a search query and can otherwise smuggle CRLF/log
+ *   injection or corrupt a query string.
+ * - Collapses runs of whitespace and trims the result.
+ * - Caps the length at {@link MAX_SEARCH_QUERY_LENGTH} to bound both the
+ *   rendered output and any URL built from it.
+ *
+ * This does not URL-encode the result — callers building a URL from the
+ * output must still use `URLSearchParams`/`encodeURIComponent`, the same as
+ * for any other value.
+ */
+export function sanitizeSearchQuery(query: string): string {
+  if (typeof query !== 'string') return '';
+
+  // eslint-disable-next-line no-control-regex -- intentionally stripping control chars
+  const withoutControlChars = query.replace(/[\x00-\x1F\x7F]/g, '');
+  const collapsedWhitespace = withoutControlChars.replace(/\s+/g, ' ').trim();
+
+  return collapsedWhitespace.slice(0, MAX_SEARCH_QUERY_LENGTH);
+}
+
 /**
  * Sanitizes a string by removing or masking sensitive patterns
  * Useful for sanitizing log messages
