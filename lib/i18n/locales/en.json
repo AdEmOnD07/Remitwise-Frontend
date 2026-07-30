@@ -117,8 +117,8 @@
     }
   },
   "settings": {
-    "wallet": {
-      "payout_iban_invalid": "Enter a valid IBAN (e.g. DE89 3704 0044 0532 0130 00)."
+    "profile": {
+      "phone_invalid": "Enter a valid phone number, including country code (e.g. +1 555 123 4567)."
     }
   }
 }
