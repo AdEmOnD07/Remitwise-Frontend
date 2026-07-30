@@ -1,8 +1,10 @@
  'use client'
 
-import { useMemo, memo } from 'react'
+import { useMemo, useCallback, memo } from 'react'
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion'
+import { useSaveData } from '@/lib/hooks/useSaveData'
 import { Activity } from 'lucide-react';
+import WidgetEmptyState from '@/components/ui/WidgetEmptyState';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -15,15 +17,18 @@ import {
 } from 'recharts';
 import { INSIGHTS_PALETTE } from './palette';
 import { generateTrendChartLabel, generateTrendChartSummary } from '@/lib/a11y';
-import WidgetEmptyState from '@/components/ui/WidgetEmptyState';
+import type { TrendChartDataPoint } from '@/lib/a11y/chartAccessibility';
+
 const LINE_COLOR = INSIGHTS_PALETTE[0];
-
-
-function useReducedMotion() {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
+const AXIS_COLOR  = '#9CA3AF'
+const GRID_COLOR  = 'rgba(255,255,255,0.06)'
+const margin = { top: 10, right: 10, left: -20, bottom: 0 };
+const xAxisTick = { fill: AXIS_COLOR, fontSize: 11 };
+const yAxisTick = { fill: AXIS_COLOR, fontSize: 11 };
+const tickFormatter = (v: number) => `$${v}`;
+const tooltipCursor = { stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 };
+const referenceLabel = { value: 'Avg', fill: 'rgba(255,255,255,0.3)', fontSize: 10, position: 'insideTopRight' };
+const activeDot = { r: 5, fill: LINE_COLOR, stroke: '#0a0a0a', strokeWidth: 2 };
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
 /**
@@ -56,9 +61,6 @@ export const MOCK_TREND_DATA: TrendDataPoint[] = [
   { date: 'Dec 8',  amount: 1420, transactions: 5 },
 ]
 
-const AXIS_COLOR  = '#6b7280'
-const GRID_COLOR  = 'rgba(255,255,255,0.06)'
-
 // ── Custom tooltip ────────────────────────────────────────────────────────────
 interface CustomTooltipProps {
   active?: boolean
@@ -66,7 +68,7 @@ interface CustomTooltipProps {
   label?: string
 }
 
-function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null
   const point = payload[0]?.payload as TrendDataPoint
 
@@ -85,7 +87,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
       </div>
     </div>
   )
-}
+})
 
 // ── Component ───────────────────────────────────────
 
@@ -99,6 +101,7 @@ function RemittanceTrendChartInner({
 }: RemittanceTrendChartProps) {
   // Use the canonical hook — reactive, SSR-safe, shared across the codebase.
   const reducedMotion = usePrefersReducedMotion()
+  const saveData = useSaveData()
 
   const isEmpty = data.length === 0
   const total   = useMemo(() => data.reduce((s, d) => s + d.amount, 0), [data])
@@ -109,22 +112,15 @@ function RemittanceTrendChartInner({
   const trend   = latest >= prev ? 'up' : 'down'
 
   // Generate accessible label and summary
-  const summaryItems = useMemo(
-    () =>
-      data.map(
-        (point) =>
-          `${point.date}: $${point.amount.toLocaleString()} (${point.transactions} tx)`,
-      ),
-    [data],
+  const chartLabel = useMemo(
+    () => generateTrendChartLabel("Remittance Trend", data as unknown as TrendChartDataPoint[], ["amount"]),
+    [data]
   )
 
-  const t = useMemo(() => {
-    return (_path: string, options?: string | Record<string, unknown>) =>
-      typeof options === 'string' ? options : _path
-  }, [])
-
-  const chartLabel = useMemo(() => buildChartImageLabel('Remittance Trend', summaryItems, t), [summaryItems, t])
-  const chartSummary = useMemo(() => buildChartSummary(summaryItems, t), [summaryItems, t])
+  const chartSummary = useMemo(
+    () => generateTrendChartSummary(data as unknown as TrendChartDataPoint[], ["amount"]),
+    [data]
+  )
 
   if (isEmpty) {
     return (
@@ -152,9 +148,9 @@ function RemittanceTrendChartInner({
         <p className="sr-only" aria-live="polite">
           No remittance trend data available.
         </p>
-      </div>
-    )
-  }
+    </div>
+  )
+}
 
   return (
     <div className="bg-black/40 border border-white/10 rounded-3xl p-5 sm:p-6 backdrop-blur-sm w-full">
@@ -193,65 +189,86 @@ function RemittanceTrendChartInner({
         </div>
       </div>
 
+
       {/* Chart */}
+      {/* Legend — ties the line color to its meaning for color-blind users
+          and screen readers alike; also surfaces the total as a value label. */}
+      <div className="flex items-center gap-2 mb-3">
+        <span
+          className="inline-block w-3 h-3 rounded-sm shrink-0"
+          style={{ backgroundColor: LINE_COLOR }}
+        />
+        <span className="text-xs text-gray-400">Amount sent</span>
+        <span className="text-xs text-white font-semibold">
+          ${total.toLocaleString()}
+        </span>
+      </div>
+
       <div role="img" aria-label={chartLabel}>
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart
-            data={data}
-            margin={{ top: 8, right: 4, bottom: 0, left: -16 }}
-            aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor={LINE_COLOR} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={LINE_COLOR} stopOpacity={0}   />
-              </linearGradient>
-            </defs>
+        {saveData ? (
+          /* Save-Data fallback: ordered number list, no AreaChart cost */
+          <ol className="space-y-1.5" aria-label="Remittance amounts by date">
+            {data.map((point) => (
+              <li key={point.date} className="flex items-center justify-between text-sm">
+                <span className="text-gray-400">{point.date}</span>
+                <span className="font-bold text-white">${point.amount.toLocaleString()}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart
+              data={data}
+              margin={margin}
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor={LINE_COLOR} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={LINE_COLOR} stopOpacity={0}   />
+                </linearGradient>
+              </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
 
-            <XAxis
-              dataKey="date"
-              tick={{ fill: AXIS_COLOR, fontSize: 10 }}
-              axisLine={false}
-              tickLine={false}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              tick={{ fill: AXIS_COLOR, fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v: number) => `$${v >= 1000 ? `${v / 1000}k` : v}`}
-              width={40}
-              className="hidden sm:block"
-            />
+              <XAxis
+                dataKey="date"
+                tick={xAxisTick}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                tick={yAxisTick}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={tickFormatter}
+                width={40}
+                className="hidden sm:block"
+              />
 
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
+              <Tooltip content={CustomTooltip} cursor={tooltipCursor} />
 
-            <ReferenceLine
-              y={average}
-              stroke="rgba(255,255,255,0.15)"
-              strokeDasharray="4 4"
-              label={{
-                value: `Avg $${average.toLocaleString()}`,
-                position: 'insideTopRight',
-                fontSize: 10,
-                fill: '#6b7280',
-              }}
-            />
+              <ReferenceLine
+                y={average}
+                stroke="rgba(255,255,255,0.15)"
+                strokeDasharray="4 4"
+                label={referenceLabel}
+              />
 
-            <Area
-              type="monotone"
-              dataKey="amount"
-              stroke={LINE_COLOR}
-              strokeWidth={2.5}
-              fill="url(#trendGradient)"
-              dot={false}
-              isAnimationActive={!reducedMotion}
-              activeDot={{ r: 5, fill: LINE_COLOR, stroke: '#0A0A0A', strokeWidth: 2 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+              <Area
+                type="monotone"
+                dataKey="amount"
+                stroke={LINE_COLOR}
+                strokeWidth={2.5}
+                fill="url(#trendGradient)"
+                dot={false}
+                isAnimationActive={!reducedMotion}
+                activeDot={activeDot}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Screen‑reader summary */}
