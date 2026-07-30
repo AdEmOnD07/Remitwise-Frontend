@@ -60,6 +60,26 @@ npx prisma migrate dev   # only needed if schema changed
 npm run dev
 ```
 
+### Mock Backend
+
+When you need a backend to develop against without running the full Next.js server,
+start the mock backend:
+
+```bash
+npm run mock:backend
+```
+
+The mock backend listens on `http://localhost:4010` by default (set `MOCK_BACKEND_PORT`
+to use a different port). It is idempotent and keeps all data in memory — stopping and
+restarting it does not create or migrate state. It serves mock responses for:
+
+- `GET /api/health`, `/api/dashboard`, `/api/remittance/quote`
+- `POST /api/auth/nonce`, `/api/auth/login`, `/api/auth/logout`
+- `GET /api/transactions`, `/api/split`, `/api/goals`, `/api/bills`
+- `GET /api/insurance`, `/api/family`
+
+All money values are returned as integer minor units.
+
 ---
 
 ## Test Commands

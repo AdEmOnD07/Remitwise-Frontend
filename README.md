@@ -135,6 +135,13 @@ Useful endpoints:
 - `GET /api/health`
 - `GET /api/dashboard`
 - `GET /api/remittance/quote?amountMinor=10000&currency=USD&toCurrency=NGN`
+- `POST /api/auth/nonce`, `POST /api/auth/login`, `POST /api/auth/logout`
+- `GET /api/transactions` — paginated list (supports `?limit=N`)
+- `GET /api/split` — active split allocations
+- `GET /api/goals` — savings goals list
+- `GET /api/bills` — bills list
+- `GET /api/insurance` — insurance policies list
+- `GET /api/family` — family members list
 
 Mock money values are returned as integer minor units, for example
 `amountMinor`, `feeMinor`, and `receiveAmountMinor`.
@@ -250,19 +257,18 @@ To run the Playwright end-to-end tests for authentication and protected routes:
 npm run test:e2e
 ```
 
-A lightweight smoke test (`npm run test:smoke`) runs automatically in a
-`pre-push` git hook (via husky — installed as part of `npm install`'s
-`prepare` script). It starts the dev server and checks that `/api/health`
-responds at all (200 healthy or 503 degraded both count — this isn't a
-dependency health check, just confirmation the app itself booted), using
-its own `playwright.smoke.config.ts` so it never depends on the root page
-rendering successfully. It's meant to be fast: no browser is launched, since
-the test only uses Playwright's `request` fixture.
+### Storybook
 
-For validating responsive breakpoints and layouts across different viewports, see the [Responsive Testing Guide](docs/RESPONSIVE_TESTING.md).
+Primitive components (e.g. `Toast`, `Nav`, the `i18n` formatters) have stories
+under `components/**/*.stories.tsx`, viewable in isolation with Storybook:
 
-For verifying components in a right-to-left (RTL) locale (Arabic, Hebrew), see the [RTL Testing Guide](docs/RTL_TESTING.md).
+```bash
+# Start the local Storybook dev server on http://localhost:6006
+npm run storybook
 
+# Build a static Storybook (output: storybook-static/)
+npm run build-storybook
+```
 
 ## Project Structure
 
@@ -304,16 +310,7 @@ Every route handler under `app/api/` is composed from a small set of reusable de
 
 For authenticated browser-side requests, use the shared client API layer documented in [docs/client-api.md](docs/client-api.md). That guide covers when to use `apiClient` instead of raw `fetch`, the `401 -> refresh -> retry once` flow, session-expiry UI surfacing, and logout behavior.
 
-For server-side and third-party requests that need automatic abort on deadline, use the `fetchWithTimeout` wrapper documented in [docs/fetch-timeout.md](docs/fetch-timeout.md). Each endpoint declares its timeout in `lib/config/fetch-timeouts.ts`; the wrapper aborts and throws a `TimeoutError` if the deadline is exceeded. `apiClient` uses the same design for browser requests.
-
-### Transaction Export
-
-Both the standalone **Transactions** page (`/transactions`) and the dashboard
-**Transaction History** page (`/dashboard/transaction-history`) support
-exporting the currently filtered transaction list as **CSV** or **JSON**.
-Click the Export button to open a format picker (CSV for spreadsheets, JSON
-for programmatic consumption). Exports are capped at **10,000 rows** and
-include the filter context (date range) in the download filename.
+Form input is validated with Zod schemas kept in `lib/validation/*.ts`, separate from the form components. See [docs/zod-form-composition.md](docs/zod-form-composition.md) for the convention: where the schema lives, how it reports errors, and how a component wires it up.
 
 Route-level page titles now use a shared deep-link heading pattern. Use the shared heading primitive with a stable route-specific id whenever you add or update a primary page title. See [docs/page-heading-deeplinks.md](docs/page-heading-deeplinks.md).
 
