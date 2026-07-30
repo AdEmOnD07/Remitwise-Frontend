@@ -67,7 +67,11 @@ fixed `id` matching `SECTIONS`:
 - **`FamilySection`** (`#family`) — family member list with role badges and an
   invite button. Does not use autosave (inline actions only).
 - **`PreferencesSection`** (`#preferences`) — theme picker, **density controls
-  wired to `useDensity()`**, language/timezone selects, and date-format radios.
+  wired to `useDensity()`**, language/timezone selects, date-format radios,
+  and a **Developer Telemetry toggle wired to `useTelemetry()`** that persists
+  to `localStorage` under the key `developer-telemetry-enabled`. When on,
+  structured events emitted via `logTelemetry()` are printed to the browser
+  console as JSON (`[telemetry] {...}`).
   Uses `useAutosave` (500ms debounce).
 
 ## Cross-cutting integrations
@@ -79,7 +83,7 @@ fixed `id` matching `SECTIONS`:
   group and the mirrored `<select>` reflect the same context value.
 - **Autosave** — Profile, Notifications, Wallet, and Preferences sections use
   the `useAutosave` hook (`lib/hooks/useAutosave.ts`) which debounces saves by
-  500ms after the last change and fires a success toast. `TextInput` and
+  500ms after the last change and fires a success toast (see [FORM_PATTERNS.md](FORM_PATTERNS.md) for full autosave pattern details). `TextInput` and
   `Toggle` primitives support `value`/`checked` + `onChange` for controlled
   usage. `SaveButton` accepts an optional `saveState` prop to reflect the
   autosave state (idle → saving → saved → idle). The hook uses a ref to always
