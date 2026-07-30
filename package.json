@@ -8,7 +8,7 @@
     "generate:types": "openapi-typescript ./openapi.yaml --output ./src/api/types.ts",
     "prebuild": "npm run generate:types",
     "dev": "next dev",
-    "mock:anchor": "node scripts/mock-anchor-server.mjs",
+    "dev:reset": "node scripts/dev-reset.mjs",
     "build": "next build --webpack",
     "start": "next start",
     "check:img-alt": "node scripts/check-img-alt.js",

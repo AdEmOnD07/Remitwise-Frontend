@@ -13,29 +13,9 @@ import { ShortcutHelpProvider } from "@/lib/context/ShortcutHelpContext";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import ToastRegion from "@/components/ToastRegion";
 import SessionExpiryProvider from "@/components/SessionExpiryProvider";
-import ShortcutHelpModal from "@/components/ShortcutHelpModal";
-import UnhandledRejectionListener from "@/components/UnhandledRejectionListener";
-import { apiClient } from "@/lib/client/apiClient";
-
-/**
- * Lazy-loaded: CommandPalette pulls in its own icon set (13 lucide-react
- * icons) and renders `null` until the user opens it (Cmd/Ctrl+K), but was
- * previously a static import here -- mounted on every route via `Providers`,
- * its icons shipped in the initial bundle on every page load regardless of
- * whether the palette was ever opened.
- */
-const CommandPalette = lazy(() => import("@/components/CommandPalette"));
-
-/** Keeps the API client's authorization header aligned with wallet state. */
-function ApiClientAuthBridge() {
-  const { account, isConnected } = useWallet();
-
-  useEffect(() => {
-    apiClient.setAuthToken(isConnected ? account?.address : null);
-  }, [account?.address, isConnected]);
-
-  return null;
-}
+import CommandPalette from "@/components/CommandPalette";
+import DevRequestIdDisplay from "@/components/DevRequestIdDisplay";
+import DevResetHandler from "@/components/dev/DevResetHandler";
 
 /**
  * Client-side provider boundary for the app.
@@ -56,14 +36,11 @@ export default function Providers({ children }: { children: ReactNode }) {
           <TelemetryProvider>
             <AsyncOperationsProvider>
               <SessionExpiryProvider>
-                <ShortcutHelpProvider>
-                  <LayoutWrapper>{children}</LayoutWrapper>
-                  <ToastRegion />
-                  <Suspense fallback={null}>
-                    <CommandPalette />
-                  </Suspense>
-                  <ShortcutHelpModal />
-                </ShortcutHelpProvider>
+                <LayoutWrapper>{children}</LayoutWrapper>
+                <ToastRegion />
+                <CommandPalette />
+                <DevRequestIdDisplay />
+                <DevResetHandler />
               </SessionExpiryProvider>
             </AsyncOperationsProvider>
           </TelemetryProvider>
