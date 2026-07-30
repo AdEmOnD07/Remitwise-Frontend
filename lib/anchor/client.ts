@@ -36,7 +36,37 @@ export interface AnchorFlowResponse {
     [key: string]: unknown;
 }
 
-export const DEFAULT_TIMEOUT_MS = 5000;
+const ALLOWED_ANCHOR_URL_PROTOCOLS = new Set(['http:', 'https:']);
+
+/**
+ * Anchor deposit/withdraw flow URLs come from the anchor's own API response --
+ * external, untrusted input from the app's perspective. A compromised anchor
+ * (or a MITM) returning a `javascript:`/`data:` URL here must never reach the
+ * client as something that later gets rendered as a link or navigated to.
+ * Fails closed: returns undefined for anything that isn't an absolute
+ * http(s) URL, including malformed strings and non-string input.
+ */
+export function sanitizeAnchorUrl(rawUrl: unknown): string | undefined {
+    if (typeof rawUrl !== 'string') return undefined;
+    try {
+        const parsed = new URL(rawUrl);
+        return ALLOWED_ANCHOR_URL_PROTOCOLS.has(parsed.protocol) ? rawUrl : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+import { fetchWithTimeout } from '../fetch-timeout';
+import {
+  ANCHOR_DEFAULT_TIMEOUT_MS,
+} from '../config/fetch-timeouts';
+
+/**
+ * @deprecated Import {@link ANCHOR_DEFAULT_TIMEOUT_MS} from
+ *   `lib/config/fetch-timeouts` instead. This re-export is kept for backwards
+ *   compatibility only and will be removed in a future release.
+ */
+export const DEFAULT_TIMEOUT_MS = ANCHOR_DEFAULT_TIMEOUT_MS;
 export const MAX_RETRY_ATTEMPTS = 3;
 export const RETRY_BASE_DELAY_MS = 200;
 
@@ -66,24 +96,13 @@ export class AnchorClient {
         return Boolean(this.baseUrl);
     }
 
-    private async fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<Response> {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeoutMs);
-
-        try {
-            const response = await fetch(url, {
-                ...options,
-                signal: controller.signal,
-            });
-            clearTimeout(id);
-            return response;
-        } catch (error: unknown) {
-            clearTimeout(id);
-            if (error instanceof Error && error.name === 'AbortError') {
-                throw new Error(`Request timed out after ${timeoutMs}ms`);
-            }
-            throw error;
-        }
+    /**
+     * Delegates to the shared {@link fetchWithTimeout} wrapper from
+     * `lib/fetch-timeout.ts`, which resolves the timeout from the
+     * per-endpoint policy table when none is supplied explicitly.
+     */
+    private async fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs?: number): Promise<Response> {
+        return fetchWithTimeout(url, options, timeoutMs);
     }
 
     private async sleep(ms: number): Promise<void> {

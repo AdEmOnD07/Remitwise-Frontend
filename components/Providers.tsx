@@ -1,11 +1,15 @@
 "use client";
 
-import { ReactNode } from "react";
-import { WalletProvider } from "stellar-wallet-kit";
+import { ReactNode, useEffect, lazy, Suspense } from "react";
+import { WalletProvider, useWallet } from "stellar-wallet-kit";
 import { DensityProvider } from "@/lib/context/DensityContext";
+import { TelemetryProvider } from "@/lib/context/TelemetryContext";
 import { ThemeProvider } from "@/lib/context/ThemeContext";
 import { ToastProvider } from "@/lib/context/ToastContext";
+import { NetworkStatusProvider } from "@/lib/context/NetworkStatusContext";
 import { AsyncOperationsProvider } from "@/lib/context/AsyncOperationsContext";
+import { ConfirmProvider } from "@/lib/context/ConfirmContext";
+import { ShortcutHelpProvider } from "@/lib/context/ShortcutHelpContext";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import ToastRegion from "@/components/ToastRegion";
 import SessionExpiryProvider from "@/components/SessionExpiryProvider";
@@ -25,9 +29,11 @@ import DevResetHandler from "@/components/dev/DevResetHandler";
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <WalletProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <DensityProvider>
+      <ApiClientAuthBridge />
+      <UnhandledRejectionListener />
+      <ToastProvider>
+        <DensityProvider>
+          <TelemetryProvider>
             <AsyncOperationsProvider>
               <SessionExpiryProvider>
                 <LayoutWrapper>{children}</LayoutWrapper>
@@ -37,9 +43,9 @@ export default function Providers({ children }: { children: ReactNode }) {
                 <DevResetHandler />
               </SessionExpiryProvider>
             </AsyncOperationsProvider>
-          </DensityProvider>
-        </ToastProvider>
-      </ThemeProvider>
+          </TelemetryProvider>
+        </DensityProvider>
+      </ToastProvider>
     </WalletProvider>
   );
 }
