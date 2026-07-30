@@ -34,6 +34,22 @@ describe('sanitizeObject', () => {
     expect(result.address).toBe('GBXXXX***');
   });
 
+  it('partially masks contract addresses/IDs', () => {
+    const result = sanitizeObject({
+      contractAddress: 'CBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      contract_id: 'CDYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY',
+    });
+    expect(result.contractAddress).toBe('CBXXXX***');
+    expect(result.contract_id).toBe('CDYYYY***');
+    expect(JSON.stringify(result)).not.toContain('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+  });
+
+  it('sanitizeContractAddress masks a raw contract address for direct call sites', () => {
+    expect(sanitizeContractAddress('CBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')).toBe(
+      'CBXXXX***',
+    );
+  });
+
   it('leaves safe fields unchanged', () => {
     const result = sanitizeObject({
       amount: 100,
