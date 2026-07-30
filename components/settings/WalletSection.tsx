@@ -4,6 +4,7 @@ import { useState, useCallback, type ChangeEvent } from "react";
 import { Wallet } from "lucide-react";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useAutosave } from "@/lib/hooks/useAutosave";
+import { useSafeReload } from "@/lib/hooks/useSafeReload";
 import { isValidIban } from "@/lib/validation/iban";
 import {
   SectionCard,
@@ -148,7 +149,17 @@ export function WalletSection() {
           )}
         </FieldRow>
       </div>
-      <SaveButton labelKey="settings.save_changes" saveState={saveState} />
+      <SaveButton
+        labelKey="settings.save_changes"
+        saveState={saveState}
+        onSave={() => {
+          if (payoutIban && !isValidIban(payoutIban)) {
+            setPayoutIbanError(t("settings.wallet.payout_iban_invalid"));
+            return;
+          }
+          triggerSave();
+        }}
+      />
     </SectionCard>
   );
 }
