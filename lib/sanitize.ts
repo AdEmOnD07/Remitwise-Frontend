@@ -32,6 +32,10 @@ const PARTIAL_MASK_FIELDS = new Set([
   'public_key',
   'walletaddress',
   'wallet_address',
+  'contractaddress',
+  'contract_address',
+  'contractid',
+  'contract_id',
 ]);
 
 const MAX_DEPTH = 5;
@@ -64,6 +68,15 @@ function maskAddress(address: string): string {
  * Public wrapper around the internal {@link maskAddress} helper.
  */
 export function sanitizeWalletAddress(address: string): string {
+  return maskAddress(address);
+}
+
+/**
+ * Partially masks a Soroban contract address/ID for safe inclusion in
+ * logs/telemetry. Public wrapper around the internal {@link maskAddress}
+ * helper, mirroring {@link sanitizeWalletAddress}.
+ */
+export function sanitizeContractAddress(address: string): string {
   return maskAddress(address);
 }
 
@@ -129,7 +142,11 @@ export function sanitizeObject(
           lowerKey === 'publickey' ||
           lowerKey === 'public_key' ||
           lowerKey === 'walletaddress' ||
-          lowerKey === 'wallet_address'
+          lowerKey === 'wallet_address' ||
+          lowerKey === 'contractaddress' ||
+          lowerKey === 'contract_address' ||
+          lowerKey === 'contractid' ||
+          lowerKey === 'contract_id'
         ) {
           sanitized[key] = maskAddress(value);
         } else if (lowerKey === 'phone') {
