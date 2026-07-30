@@ -1,4 +1,5 @@
 import { sanitizeWalletAddress } from '../sanitize';
+import { getSessionId } from './sessionId';
 
 /**
  * Short, scoped label identifying which part of the app raised the error
@@ -18,7 +19,9 @@ const getReporter = (): Reporter => {
   if (!dsn) {
     return {
       captureException: (err, _context, tag) =>
-        console.error('[ErrorReporter No-Op]', tag ? `[${tag}]` : '', err),
+        console.error('[ErrorReporter No-Op]', tag ? `[${tag}]` : '', err, {
+          sessionId: getSessionId(),
+        }),
     };
   }
 
@@ -33,6 +36,7 @@ const getReporter = (): Reporter => {
       console.log('[ErrorReporter] Reporting to Sentry:', err, {
         ...(tag ? { tag } : {}),
         context: scrubbedContext,
+        sessionId: getSessionId(),
       });
     }
   };

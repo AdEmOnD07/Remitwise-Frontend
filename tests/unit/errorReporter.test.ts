@@ -22,7 +22,8 @@ test('no-op reporter includes the scoped tag in the console output when provided
   expect(consoleSpy).toHaveBeenCalledWith(
     '[ErrorReporter No-Op]',
     '[payout-form]',
-    expect.any(Error)
+    expect.any(Error),
+    { sessionId: expect.any(String) }
   );
 });
 
@@ -30,5 +31,17 @@ test('no-op reporter omits the tag marker entirely when none is provided', () =>
   const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   errorReporter.captureException(new Error('boom'));
 
-  expect(consoleSpy).toHaveBeenCalledWith('[ErrorReporter No-Op]', '', expect.any(Error));
+  expect(consoleSpy).toHaveBeenCalledWith('[ErrorReporter No-Op]', '', expect.any(Error), {
+    sessionId: expect.any(String),
+  });
+});
+
+test('every logged entry carries the same session ID across calls', () => {
+  const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  errorReporter.captureException(new Error('first'));
+  errorReporter.captureException(new Error('second'));
+
+  const firstSessionId = consoleSpy.mock.calls[0][3].sessionId;
+  const secondSessionId = consoleSpy.mock.calls[1][3].sessionId;
+  expect(firstSessionId).toBe(secondSessionId);
 });
