@@ -32,7 +32,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { validatedRoute } from "@/lib/auth/middleware";
 import { jsonError } from "@/lib/api/types";
+import { hasAtMostDecimals } from "@/lib/utils/decimal-places";
 
+const MAX_AMOUNT_DECIMALS = 2;
 
 /**
  * Coerce query-string strings into the right types.
@@ -52,9 +54,18 @@ const quoteSchema = z.object({
   amount: z.coerce
     .number()
     .gt(0, "amount must be greater than 0")
-    .refine(hasAtMostTwoDecimals, "amount must have at most 2 decimal places"),
-  currency: currencyCode,
-  toCurrency: currencyCode,
+    .refine((value) => hasAtMostDecimals(value, MAX_AMOUNT_DECIMALS), {
+      message: `amount must have at most ${MAX_AMOUNT_DECIMALS} decimal places`,
+    }),
+  currency: z
+    .string()
+    .length(3, "currency must be a 3-letter ISO code")
+    .toUpperCase(),
+
+  toCurrency: z
+    .string()
+    .length(3, "toCurrency must be a 3-letter ISO code")
+    .toUpperCase(),
 });
 
 type QuoteInput = z.infer<typeof quoteSchema>;
