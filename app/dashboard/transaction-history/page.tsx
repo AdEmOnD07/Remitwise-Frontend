@@ -12,13 +12,7 @@ import { TransactionItem } from "@/lib/remittance/horizon";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useSeo } from "@/lib/hooks/useSeo";
-import { useInfiniteScrollObserver } from "@/lib/hooks/useInfiniteScrollObserver";
-import { useCursorPagination } from "@/lib/hooks/useCursorPagination";
-import {
-  serializeToCsv,
-  serializeToJson,
-  getExportFilename,
-} from "@/lib/utils/export-serializer";
+import { sanitizeSearchQuery } from "@/lib/sanitize";
 import type {
   Transaction,
   TransactionStatus,
@@ -69,6 +63,13 @@ const TransactionHistoryPage = () => {
   const [userAddress, setUserAddress] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
+  // Strips control characters, collapses whitespace, and caps length before
+  // the raw search term is used to filter, rendered back as a filter chip,
+  // or (in the future) synced to the URL.
+  const sanitizedSearch = useMemo(
+    () => sanitizeSearchQuery(debouncedSearch),
+    [debouncedSearch],
+  );
   const [statusFilter, setStatusFilter] = useState<
     "all" | "completed" | "failed" | "pending"
   >("all");
@@ -195,14 +196,14 @@ const TransactionHistoryPage = () => {
   }, []);
 
   const hasActiveFilters =
-    debouncedSearch.trim().length > 0 ||
+    sanitizedSearch.length > 0 ||
     statusFilter !== "all" ||
     directionFilter !== "all" ||
     dateFrom.length > 0 ||
     dateTo.length > 0;
 
   const filteredTransactions = useMemo(() => {
-    const query = debouncedSearch.trim().toLowerCase();
+    const query = sanitizedSearch.toLowerCase();
 
     return transactions.filter((tx) => {
       if (statusFilter !== "all") {
@@ -249,7 +250,7 @@ const TransactionHistoryPage = () => {
     });
   }, [
     transactions,
-    debouncedSearch,
+    sanitizedSearch,
     statusFilter,
     directionFilter,
     dateFrom,
@@ -588,11 +589,11 @@ const TransactionHistoryPage = () => {
                   onRemove={() => setDirectionFilter("all")}
                 />
               )}
-              {debouncedSearch.trim().length > 0 && (
+              {sanitizedSearch.length > 0 && (
                 <ActivePill
                   label={t("transactionHistory.activeFilters.search").replace(
                     "{{query}}",
-                    debouncedSearch,
+                    sanitizedSearch,
                   )}
                   onRemove={() => setSearchTerm("")}
                 />
