@@ -1,112 +1,76 @@
 {
-  "approvals_queue": {
-    "signed_toast": "Signature collected",
-    "approved_toast": "Approval complete",
-    "sign_failed_toast": "Signing failed"
-  },
-  "insurance": {
-    "page_title": "Micro-Insurance",
-    "page_subtitle": "Manage your active coverage policies",
-    "new_policy": "New Policy",
-    "active_policies": "Active Policies",
-    "no_policies_title": "No active policies yet",
-    "no_policies_body": "Create your first policy to start protecting what matters most.",
-    "total_premium": "Total Monthly Premium",
-    "total_premium_sub": "Auto-paid from remittance allocation",
-    "card_coverage_type": "Coverage Type",
-    "card_monthly_premium": "Monthly Premium",
-    "card_coverage_amount": "Coverage Amount",
-    "card_next_payment": "Next Payment",
-    "card_pay_now": "Pay Premium Now",
-    "card_view_detail": "View Details",
-    "detail_subtitle": "Policy details and actions",
-    "detail_close": "Close policy details",
-    "detail_status_idle_title": "Ready",
-    "detail_status_idle_desc": "Select an action above to interact with this policy.",
-    "detail_status_pending_title": "Processing request",
-    "detail_status_pending_desc": "Building the on-chain payload — this takes a moment.",
-    "detail_status_success_title": "Request ready",
-    "detail_status_error_title": "Request failed",
-    "pay_success_desc": "Premium payment payload is ready for signing.",
-    "deactivate_success_desc": "Deactivation payload is ready for signing.",
-    "pay_confirm_title": "Confirm premium payment",
-    "pay_confirm_body": "You are about to pay {{amount}} for this policy. This action cannot be undone after signing.",
-    "pay_submitting": "Preparing payment…",
-    "pay_confirm": "Confirm Payment",
-    "deactivate_confirm_title": "Deactivate policy permanently",
-    "deactivate_confirm_body": "This will permanently deactivate your policy. You will lose coverage immediately and cannot reactivate it. Are you sure?",
-    "deactivate_submitting": "Deactivating…",
-    "deactivate_confirm": "Yes, Deactivate",
-    "action_deactivate": "Deactivate Policy",
-    "action_cancel": "Cancel",
-    "already_deactivated": "This policy has been deactivated and can no longer be modified.",
-    "error_fetch_policies": "Failed to load policies. Please try again.",
-    "error_fetch_detail": "Failed to load policy details.",
-    "pay_success_toast": "Payment XDR ready for signing",
-    "pay_error_toast": "Payment failed",
-    "deactivate_success_toast": "Policy deactivated",
-    "deactivate_error_toast": "Deactivation failed"
-  },
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "network": "Network connection error. Check your connection.",
     "unauthorized": "Session expired. Please log in again."
   },
-  "contractErrors": {
-    "generic": "Contract execution failed. Please try again.",
-    "invalidInput": "Invalid input provided.",
-    "invalidAmount": "Invalid contract amount.",
-    "invalidRecipient": "Invalid contract recipient.",
-    "unauthorized": "Unauthorized access to contract.",
-    "forbidden": "Action forbidden by contract.",
-    "notFound": "Contract resource not found.",
-    "executionFailed": "Contract execution failed.",
-    "contractExecError": "Contract execution failed.",
-    "systemError": "Internal system error.",
-    "limitExceeded": "Contract operation limit exceeded."
-  },
   "transactionHistory": {
     "title": "Transaction History",
+    "titleStandalone": "Transactions",
+    "subtitleStandalone": "Filter, search, and review Send Money, Smart Split, Bill Payment, and Insurance activity.",
     "empty": "No transactions found",
     "amount": "Amount",
     "status": "Status",
-    "date": "Date"
-  },
-  "transactionStatus": {
-    "pending": {
-      "label": "Confirming",
-      "emphasis": "Waiting for network confirmation"
+    "date": "Date",
+    "export": "Export",
+    "filtersHeading": "Filter & search",
+    "filtersHelper": "Combine type, status, date range, and search. Active filters appear below.",
+    "searchStandalonePlaceholder": "Search id, recipient, type, status, amount",
+    "showing": "Showing {{count}} of {{total}}",
+    "results_one": "{{count}} transaction",
+    "results_many": "{{count}} transactions",
+    "typeFilterLabel": "Type",
+    "statusFilterLabel": "Status",
+    "dateRange": {
+      "label": "Date range",
+      "from": "From",
+      "to": "To",
+      "clear": "Clear date range"
     },
-    "confirmed": {
-      "label": "Confirmed",
-      "emphasis": "Settled on the Stellar network"
+    "activeFilters": {
+      "label": "Active filters",
+      "none": "None",
+      "clearAll": "Clear all",
+      "clearSearch": "Clear search",
+      "search": "Search: {{query}}",
+      "type": "Type: {{type}}",
+      "status": "Status: {{status}}"
     },
-    "failed": {
-      "label": "Failed",
-      "emphasis": "The transaction did not go through"
+    "sort": {
+      "label": "Sort",
+      "date": "Date",
+      "amount": "Amount",
+      "ascending": "ascending",
+      "descending": "descending"
     },
-    "unknown": {
-      "label": "Status unknown",
-      "emphasis": "Still unconfirmed — check the explorer"
+    "dateGroups": {
+      "today": "Today",
+      "todayHelper": "Transactions from today",
+      "thisWeek": "This Week",
+      "thisWeekHelper": "Earlier this week (Mon–Sun, excluding today)",
+      "earlier": "Earlier",
+      "earlierHelper": "Before this week"
+    },
+    "emptyState": {
+      "title": "No transactions yet",
+      "description": "When you send money, pay bills, or use Smart Split, your activity will show up here.",
+      "cta": "Send money"
+    },
+    "noResults": {
+      "title": "No matching transactions",
+      "description": "Try clearing filters or adjusting your search to see more results.",
+      "clearFilters": "Clear filters"
     }
   },
   "dashboard": {
     "totalSent": "Total Sent",
     "savings": "Savings",
     "billsPaid": "Bills Paid",
-    "insurance": "Insurance",
-    "transfers": "{{count}} transfers",
-    "goals": "{{count}} goals",
-    "billsCount": "{{count}} paid",
-    "policies": "{{count}} policies",
-    "loadError": "We couldn't load your dashboard summary.",
-    "unavailable": "—"
+    "insurance": "Insurance"
   },
   "quickActions": {
     "emergencyTransfer": "Emergency Transfer",
     "send": "Send",
-    "split": "Split",
-    "family": "Family",
     "goals": "Goals",
     "bills": "Bills",
     "urgentBadge": "URGENT"
