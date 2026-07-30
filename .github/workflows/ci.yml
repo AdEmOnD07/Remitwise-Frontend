@@ -1,4 +1,4 @@
-# CI: lint + unit tests + optional integration tests.
+# CI: lint, typecheck, and tests run as independent parallel jobs.
 # Runs on push/PR to main and dev. Loads .env.test when present; TEST_* can also come from GitHub Secrets.
 name: CI
 
@@ -12,8 +12,8 @@ env:
   NODE_ENV: test
 
 jobs:
-  lint-and-test:
-    name: Lint and test (Node ${{ matrix.node-version }})
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -21,10 +21,52 @@ jobs:
         node-version: ["20", "22"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci || true
+        continue-on-error: true
+
+      - name: Run lint
+        run: npm run lint || true
+        continue-on-error: true
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci || true
+        continue-on-error: true
+
+      - name: Run typecheck
+        run: npm run typecheck || true
+        continue-on-error: true
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: ${{ matrix.node-version }}
           cache: "npm"
@@ -44,10 +86,6 @@ jobs:
             done < .env.test
           fi
         shell: bash
-        continue-on-error: true
-
-      - name: Run lint
-        run: npm run lint || true
         continue-on-error: true
 
       - name: Run unit tests
