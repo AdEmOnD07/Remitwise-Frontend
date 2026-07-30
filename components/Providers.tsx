@@ -1,16 +1,41 @@
 "use client";
 
-import { ReactNode } from "react";
-import { WalletProvider } from "stellar-wallet-kit";
+import { ReactNode, useEffect, lazy, Suspense } from "react";
+import { WalletProvider, useWallet } from "stellar-wallet-kit";
 import { DensityProvider } from "@/lib/context/DensityContext";
+import { TelemetryProvider } from "@/lib/context/TelemetryContext";
 import { ThemeProvider } from "@/lib/context/ThemeContext";
 import { ToastProvider } from "@/lib/context/ToastContext";
+import { NetworkStatusProvider } from "@/lib/context/NetworkStatusContext";
 import { AsyncOperationsProvider } from "@/lib/context/AsyncOperationsContext";
+import { ConfirmProvider } from "@/lib/context/ConfirmContext";
+import { ShortcutHelpProvider } from "@/lib/context/ShortcutHelpContext";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import ToastRegion from "@/components/ToastRegion";
 import SessionExpiryProvider from "@/components/SessionExpiryProvider";
-import CommandPalette from "@/components/CommandPalette";
-import DevRequestIdDisplay from "@/components/DevRequestIdDisplay";
+import ShortcutHelpModal from "@/components/ShortcutHelpModal";
+import UnhandledRejectionListener from "@/components/UnhandledRejectionListener";
+import { apiClient } from "@/lib/client/apiClient";
+
+/**
+ * Lazy-loaded: CommandPalette pulls in its own icon set (13 lucide-react
+ * icons) and renders `null` until the user opens it (Cmd/Ctrl+K), but was
+ * previously a static import here -- mounted on every route via `Providers`,
+ * its icons shipped in the initial bundle on every page load regardless of
+ * whether the palette was ever opened.
+ */
+const CommandPalette = lazy(() => import("@/components/CommandPalette"));
+
+/** Keeps the API client's authorization header aligned with wallet state. */
+function ApiClientAuthBridge() {
+  const { account, isConnected } = useWallet();
+
+  useEffect(() => {
+    apiClient.setAuthToken(isConnected ? account?.address : null);
+  }, [account?.address, isConnected]);
+
+  return null;
+}
 
 /**
  * Client-side provider boundary for the app.
@@ -24,20 +49,26 @@ import DevRequestIdDisplay from "@/components/DevRequestIdDisplay";
 export default function Providers({ children }: { children: ReactNode }) {
   return (
     <WalletProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <DensityProvider>
+      <ApiClientAuthBridge />
+      <UnhandledRejectionListener />
+      <ToastProvider>
+        <DensityProvider>
+          <TelemetryProvider>
             <AsyncOperationsProvider>
               <SessionExpiryProvider>
-                <LayoutWrapper>{children}</LayoutWrapper>
-                <ToastRegion />
-                <CommandPalette />
-                <DevRequestIdDisplay />
+                <ShortcutHelpProvider>
+                  <LayoutWrapper>{children}</LayoutWrapper>
+                  <ToastRegion />
+                  <Suspense fallback={null}>
+                    <CommandPalette />
+                  </Suspense>
+                  <ShortcutHelpModal />
+                </ShortcutHelpProvider>
               </SessionExpiryProvider>
             </AsyncOperationsProvider>
-          </DensityProvider>
-        </ToastProvider>
-      </ThemeProvider>
+          </TelemetryProvider>
+        </DensityProvider>
+      </ToastProvider>
     </WalletProvider>
   );
 }
