@@ -1,23 +1,44 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Download, FilterIcon, Loader2, SearchX, Inbox, X } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Download, FilterIcon, Loader2, SearchX, Inbox, X, ChevronDown, FileText, CircleDollarSign } from "lucide-react";
 import TransactionHistoryItem from "@/components/Dashboard/TransactionHistoryItem";
 import TransactionHistoryHeader from "./components/transaction-history-header";
 import TransactionHistorySearchInput from "./components/transaction-history-search-input";
 import Button from "./components/transaction-history-button";
+import TransactionHistoryLoadMore from "./components/transaction-history-load-more";
 import WidgetEmptyState from "@/components/ui/WidgetEmptyState";
 import { TransactionItem } from "@/lib/remittance/horizon";
 import { useClientTranslator } from "@/lib/i18n/client";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useSeo } from "@/lib/hooks/useSeo";
+import { useInfiniteScrollObserver } from "@/lib/hooks/useInfiniteScrollObserver";
+import { useCursorPagination } from "@/lib/hooks/useCursorPagination";
+import {
+  serializeToCsv,
+  serializeToJson,
+  getExportFilename,
+} from "@/lib/utils/export-serializer";
 import type {
   Transaction,
   TransactionStatus,
 } from "@/components/Dashboard/TransactionHistoryItem";
-// @ts-ignore
-import { FixedSizeList } from "react-window";
-const List = FixedSizeList as any;
+
+// Guards against dateTo < dateFrom whenever either value changes.
+// Setting dateFrom after dateTo (or dateTo before dateFrom) resets the
+// invalid value so the filter always represents a valid range.
+function useDateRangeValidation(
+  dateFrom: string,
+  dateTo: string,
+  setDateFrom: (v: string) => void,
+  setDateTo: (v: string) => void,
+) {
+  useEffect(() => {
+    if (dateFrom && dateTo && dateTo < dateFrom) {
+      setDateTo("");
+    }
+  }, [dateFrom, dateTo, setDateTo]);
+}
 
 type Direction = "all" | "sent" | "received";
 
@@ -38,21 +59,6 @@ function getGroupKey(
   return "earlier";
 }
 
-interface VirtualRowProps {
-  index: number;
-  style: React.CSSProperties;
-  data: Transaction[];
-}
-
-const TransactionVirtualRow = ({ index, style, data }: VirtualRowProps) => {
-  const tx = data[index];
-  return (
-    <div style={style}>
-      <TransactionHistoryItem transaction={tx} />
-    </div>
-  );
-};
-
 const TransactionHistoryPage = () => {
   useSeo({
     title: "Transaction History - RemitWise",
@@ -60,11 +66,7 @@ const TransactionHistoryPage = () => {
   });
 
   const { t } = useClientTranslator();
-  const [transactions, setTransactions] = useState<TransactionItem[]>([]);
   const [userAddress, setUserAddress] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState<
@@ -73,9 +75,12 @@ const TransactionHistoryPage = () => {
   const [directionFilter, setDirectionFilter] = useState<Direction>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [cursor, setCursor] = useState<string | undefined>();
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+  const exportButtonRef = useRef<HTMLButtonElement>(null);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Keep the date range valid: end < start resets the end value
+  useDateRangeValidation(dateFrom, dateTo, setDateFrom, setDateTo);
 
   const todayStart = useMemo(() => startOfDay(new Date()), []);
   const yesterdayStart = useMemo(() => {
@@ -103,68 +108,83 @@ const TransactionHistoryPage = () => {
       [t],
     );
 
-  const fetchTransactions = useCallback(
-    async (currentCursor?: string, reset = false) => {
-      try {
-        if (reset) {
-          setLoading(true);
-        } else {
-          setLoadingMore(true);
-        }
-        setError(null);
-
-        const params = new URLSearchParams();
-        params.append("limit", "50");
-        if (currentCursor && !reset) {
-          params.append("cursor", currentCursor);
-        }
-        if (statusFilter !== "all") {
-          params.append("status", statusFilter);
-        }
-
-        const response = await fetch(`/api/v1/remittance/history?${params}`);
-        if (!response.ok) {
-          throw new Error(t("transactionHistory.alerts.fetchFailed"));
-        }
-
-        const data = await response.json();
-
-        if (data.userAddress) {
-          setUserAddress(data.userAddress);
-        }
-
-        if (reset) {
-          setTransactions(data.transactions || []);
-        } else {
-          setTransactions((prev) => [...prev, ...(data.transactions || [])]);
-        }
-
-        setCursor(data.nextCursor);
-        setHasMore(!!data.nextCursor);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : t("transactionHistory.alerts.genericError"),
-        );
-      } finally {
-        setLoading(false);
-        setInitialLoading(false);
-        setLoadingMore(false);
+  const fetchTransactionsPage = useCallback(
+    async (currentCursor: string | undefined, reset: boolean) => {
+      const params = new URLSearchParams();
+      params.append("limit", "50");
+      if (currentCursor && !reset) {
+        params.append("cursor", currentCursor);
       }
+      if (statusFilter !== "all") {
+        params.append("status", statusFilter);
+      }
+
+      const response = await fetch(`/api/v1/remittance/history?${params}`);
+      if (!response.ok) {
+        throw new Error(t("transactionHistory.alerts.fetchFailed"));
+      }
+
+      const data = await response.json();
+
+      if (data.userAddress) {
+        setUserAddress(data.userAddress);
+      }
+
+      return { items: data.transactions || [], nextCursor: data.nextCursor };
     },
     [statusFilter, t],
   );
 
-  useEffect(() => {
-    fetchTransactions(undefined, true);
-  }, [fetchTransactions]);
+  const {
+    items: transactions,
+    loading,
+    loadingMore,
+    error,
+    hasMore,
+    isInitialLoading,
+    loadMore: handleLoadMore,
+    refetch: refetchTransactions,
+  } = useCursorPagination<TransactionItem>({
+    fetchPage: fetchTransactionsPage,
+    fallbackErrorMessage: t("transactionHistory.alerts.genericError"),
+  });
 
-  const handleLoadMore = useCallback(() => {
-    if (hasMore && !loadingMore) {
-      fetchTransactions(cursor, false);
+  // Close export dropdown on click outside or escape key
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (exportButtonRef.current?.contains(target)) return;
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(target)) {
+        setIsExportDropdownOpen(false);
+      }
+    };
+    if (isExportDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
     }
-  }, [hasMore, loadingMore, cursor, fetchTransactions]);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isExportDropdownOpen]);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsExportDropdownOpen(false);
+      }
+    };
+    if (isExportDropdownOpen) {
+      document.addEventListener("keydown", handleEscape);
+    }
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isExportDropdownOpen]);
+
+  const { sentinelRef } = useInfiniteScrollObserver({
+    hasMore,
+    loading: loadingMore,
+    onLoadMore: handleLoadMore,
+  });
 
   const handleClearFilters = useCallback(() => {
     setSearchTerm("");
@@ -276,7 +296,48 @@ const TransactionHistoryPage = () => {
 
   const totalCount = transactions.length;
   const filteredCount = filteredTransactions.length;
-  const isLoading = initialLoading && loading;
+
+  const handleExport = useCallback(
+    (format: "csv" | "json") => {
+      if (filteredCount === 0) return;
+
+      const rows = Object.values(groupedTransactions)
+        .flat()
+        .map((tx) => ({
+          id: tx.id,
+          type: tx.type,
+          status: tx.status,
+          amount: tx.amount,
+          currency: tx.currency,
+          counterparty: tx.counterpartyName,
+          date: tx.date,
+          fee: tx.fee,
+        }));
+
+      let dataString = "";
+      let mimeType = "";
+      if (format === "csv") {
+        dataString = serializeToCsv(rows);
+        mimeType = "text/csv;charset=utf-8;";
+      } else {
+        dataString = serializeToJson(rows);
+        mimeType = "application/json;charset=utf-8;";
+      }
+
+      const filename = getExportFilename(format, dateFrom, dateTo);
+      const blob = new Blob([dataString], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    },
+    [groupedTransactions, dateFrom, dateTo, filteredCount],
+  );
+  const isLoading = isInitialLoading;
   const noTransactions = !isLoading && !error && totalCount === 0;
   const noResults =
     !isLoading &&
@@ -327,46 +388,63 @@ const TransactionHistoryPage = () => {
                 el?.scrollIntoView({ behavior: "smooth" });
               }}
             />
-            <Button
-              icon={<Download size={17} className="text-white" />}
-              text={t("transactionHistory.export")}
-              onclick={() => {
-                const rows = Object.values(groupedTransactions)
-                  .flat()
-                  .map((tx) => ({
-                    id: tx.id,
-                    hash: tx.hash || "",
-                    type: tx.type,
-                    status: tx.status,
-                    amount: tx.amount,
-                    currency: tx.currency,
-                    counterparty: tx.counterpartyName,
-                    date: tx.date,
-                    fee: tx.fee,
-                  }));
-
-                if (rows.length === 0) return;
-
-                const csv = [
-                  Object.keys(rows[0]).join(","),
-                  ...rows.map((row) =>
-                    Object.values(row)
-                      .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-                      .join(","),
-                  ),
-                ].join("\n");
-
-                const blob = new Blob([csv], {
-                  type: "text/csv;charset=utf-8",
-                });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "remitwise-transactions.csv";
-                link.click();
-                URL.revokeObjectURL(url);
-              }}
-            />
+            <div className="relative">
+              <button
+                ref={exportButtonRef}
+                type="button"
+                onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+                disabled={filteredCount === 0}
+                aria-expanded={isExportDropdownOpen}
+                aria-haspopup="true"
+                aria-label={t("transactionHistory.export")}
+                className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-[14px] border border-[#FFFFFF14] bg-white/5 px-4 py-3 text-center transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#010101] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:min-w-[148px]"
+              >
+                <Download size={17} className="text-white" />
+                <span className="whitespace-normal break-words text-center text-sm font-semibold leading-5 tracking-[-0.2px] text-white sm:text-base sm:leading-6">
+                  {t("transactionHistory.export")}
+                </span>
+                <ChevronDown className={`h-4 w-4 text-white transition-transform duration-200 ${isExportDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+              {isExportDropdownOpen && filteredCount > 0 && (
+                <div
+                  ref={exportDropdownRef}
+                  className="absolute right-0 mt-2 w-64 rounded-xl border border-[#FFFFFF14] bg-[#121212] p-2 shadow-xl z-50"
+                  role="menu"
+                  aria-label={t("transactionHistory.exportFormats", "Export formats")}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleExport("csv");
+                      setIsExportDropdownOpen(false);
+                    }}
+                    className="flex w-full items-start gap-3 rounded-lg p-2 text-left transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    role="menuitem"
+                  >
+                    <FileText className="mt-0.5 h-4 w-4 text-red-400 shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium text-white">Export as CSV</div>
+                      <div className="text-xs text-gray-500">For spreadsheets and reports</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleExport("json");
+                      setIsExportDropdownOpen(false);
+                    }}
+                    className="flex w-full items-start gap-3 rounded-lg p-2 text-left transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    role="menuitem"
+                  >
+                    <CircleDollarSign className="mt-0.5 h-4 w-4 text-red-400 shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium text-white">Export as JSON</div>
+                      <div className="text-xs text-gray-500">For developers and raw data</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -393,10 +471,7 @@ const TransactionHistoryPage = () => {
                   <button
                     key={status}
                     type="button"
-                    onClick={() => {
-                      setStatusFilter(status);
-                      setCursor(undefined);
-                    }}
+                    onClick={() => setStatusFilter(status)}
                     aria-pressed={statusFilter === status}
                     className={`min-h-[40px] rounded-xl px-4 py-2 text-sm font-medium transition-colors whitespace-normal sm:text-base ${
                       statusFilter === status
@@ -454,6 +529,7 @@ const TransactionHistoryPage = () => {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
+                  max={dateTo || undefined}
                   className="min-h-[40px] rounded-xl border border-[#FFFFFF14] bg-[#1A1A1A] px-3 py-2 text-sm text-white focus:border-red-400/40 focus:outline-none focus:ring-1 focus:ring-red-400/40"
                 />
               </div>
@@ -553,7 +629,7 @@ const TransactionHistoryPage = () => {
             <div className="mt-3 text-center">
               <button
                 type="button"
-                onClick={() => fetchTransactions(undefined, true)}
+                onClick={refetchTransactions}
                 className="min-h-[40px] rounded-xl bg-[#FF4B26] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#FF4B26]/80"
               >
                 Retry
@@ -668,16 +744,10 @@ const TransactionHistoryPage = () => {
                             )}
                       </span>
                     </div>
-                    <div className="h-[500px] w-full max-h-[70vh]">
-                      <List
-                        height={500}
-                        width="100%"
-                        itemCount={txs.length}
-                        itemSize={80}
-                        itemData={txs}
-                      >
-                        {TransactionVirtualRow}
-                      </List>
+                    <div className="space-y-3">
+                      {txs.map((tx) => (
+                        <TransactionHistoryItem key={tx.id} transaction={tx} />
+                      ))}
                     </div>
                   </section>
                 );
@@ -686,25 +756,16 @@ const TransactionHistoryPage = () => {
           </div>
         )}
 
-        {/* Load More Button */}
+        {/* Load More: sentinel-driven auto-load with an always-present
+            manual button fallback (see TransactionHistoryLoadMore) */}
         {hasMore && !loading && filteredCount > 0 && (
-          <div className="mt-8 text-center">
-            <button
-              type="button"
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="min-h-[48px] rounded-xl bg-[#FF4B26] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#FF4B26]/80 disabled:opacity-50 disabled:cursor-not-allowed sm:text-base"
-            >
-              {loadingMore ? "Loading..." : t("transactionHistory.loadMore")}
-            </button>
-          </div>
-        )}
-
-        {/* Loading More Indicator */}
-        {loadingMore && filteredCount > 0 && (
-          <div className="mt-4 flex justify-center">
-            <Loader2 className="w-6 h-6 text-[#FF4B26] animate-spin" />
-          </div>
+          <TransactionHistoryLoadMore
+            loading={loadingMore}
+            onLoadMore={handleLoadMore}
+            sentinelRef={sentinelRef}
+            label={t("transactionHistory.loadMore")}
+            loadingLabel="Loading..."
+          />
         )}
       </div>
     </main>
