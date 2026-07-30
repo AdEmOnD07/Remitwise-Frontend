@@ -9,7 +9,58 @@ This project uses two theming layers:
 
 Prefer these tokens before adding raw colors, spacing, focus rings, breakpoints,
 or animation values. If a new value is needed, add it to the token layer first
-and document its semantic role here in the same PR.
+and document its semantic role here in the same PR. For surface hierarchy and
+shadow use, see [docs/ELEVATION.md](ELEVATION.md), and check the
+[Design System Roadmap](DESIGN_SYSTEM_ROADMAP.md) for active token deprecations
+and planned components.
+
+## Theme-Switching Architecture
+
+This section documents how a `ThemePreference` (`"system" | "light" | "dark"`)
+actually gets from storage to the rendered page. The token catalog above is
+*what* the tokens are; this is *how* the app picks which values apply.
+
+### The moving parts
+
+- **`lib/config/theme.ts`** — the `ThemePreference` type, the
+  `THEME_STORAGE_KEY` (`"theme-preference"`) it's persisted under in
+  `localStorage`, and the `isThemePreference` guard used to validate whatever
+  comes back out of storage (never trust it blindly -- it can be corrupted,
+  stale from an older schema, or absent).
+- **`lib/context/ThemeContext.tsx`** — `ThemeProvider`/`useTheme`. Owns the
+  current preference in React state, seeded from `localStorage` on mount, and
+  exposes `setTheme` (writes through to `localStorage` and updates state).
+- **The `<html>` element's class list** — `.dark` / `.light` (or neither, for
+  the OS-driven case). This, not React state, is what the CSS custom
+  properties in `:root` / `html.dark` / `html.light` actually key off of. See
+  `applyThemePreference()` in `ThemeContext.tsx`.
+- **The inline script in `app/layout.tsx`** — a *second*, hand-duplicated copy
+  of the same class-resolution logic as `applyThemePreference`, injected as a
+  raw `<script>` and run before React hydrates.
+
+### Why there are two copies of the same logic
+
+The inline script in `app/layout.tsx` exists purely to avoid a flash of the
+wrong theme: without it, the page would first paint with no theme class (the
+server has no access to `localStorage`), then flip to the right one only
+once `ThemeProvider`'s effect runs after hydration. Running the class
+resolution synchronously, before paint, eliminates that flash.
+
+This means `app/layout.tsx`'s inline script and `ThemeContext.tsx`'s
+`applyThemePreference` **must be kept in sync by hand** -- there is no shared
+module between them (the inline script can't `import` anything; it has to be
+a self-contained string). If you change how a preference resolves to a class
+in one, change it in the other in the same PR, or the pre-hydration paint and
+the post-hydration state will disagree.
+
+### `"system"` stays live
+
+Choosing `"system"` doesn't just resolve `prefers-color-scheme` once.
+`ThemeContext.tsx`'s effect subscribes to the media query's `change` event
+for as long as `theme === "system"`, so toggling the OS theme while the app
+is open updates the page immediately, with no reload. Switching away from
+`"system"` unsubscribes (the effect's cleanup runs on the next `theme`
+change).
 
 ## CSS Custom Properties
 
@@ -25,6 +76,9 @@ All current CSS custom properties are declared in `app/globals.css`.
 | `--color-bg3` | Not declared | `#0a0a0a` | Lower layer of the dark card gradient. | Used by `--card`. |
 | `--card` | Not declared | `linear-gradient(var(--color-bg2), var(--color-bg3))` | Reusable dark card background gradient. | Declared for card-like surfaces that need a CSS variable. |
 | `--accent` | Not declared | `#dc2626` | Primary red accent for dark-mode UI emphasis. Prefer Tailwind `brand.red` or `red.600` in JSX unless CSS needs a variable. | Declared for CSS-level accent styling. |
+| `--skeleton-base` | `rgba(0, 0, 0, 0.06)` | `rgba(255, 255, 255, 0.05)` | Resting fill of an animated skeleton placeholder, and the two ends of its shimmer gradient. | `.rw-skeleton--shimmer` |
+| `--skeleton-highlight` | `rgba(0, 0, 0, 0.12)` | `rgba(255, 255, 255, 0.1)` | Travelling highlight at the midpoint of the shimmer gradient. | `.rw-skeleton--shimmer` |
+| `--skeleton-static` | `rgba(0, 0, 0, 0.1)` | `rgba(255, 255, 255, 0.1)` | Flat fill of a non-animated skeleton placeholder — the static variant, and what the shimmer variant falls back to under `prefers-reduced-motion: reduce`. Set to the shimmer's *highlight* value, not its base, so removing the animation does not also make the placeholder fainter. | `.rw-skeleton` |
 
 The active global body styles are intentionally minimal:
 
@@ -142,11 +196,20 @@ These utilities are defined in `app/globals.css`.
 | --- | --- | --- |
 | `.starry-bg` | Repeating radial dot background at `40px` size. | Decorative dark-page background. |
 | `.safari-safe-top` | `padding-top: env(safe-area-inset-top)` | Respect iOS top safe area. |
-| `.safari-safe-bottom` | `padding-bottom: env(safe-area-inset-bottom)` | Respect iOS bottom safe area. |
+| `.safari-safe-bottom` | `padding-bottom: env(safe-area-inset-bottom)` | Respect iOS bottom safe area. Requires `viewport-fit=cover` (set globally in `app/layout.tsx`) or the inset reads as `0px`. Elements with existing base padding should use the `calc(theme(spacing.N)+env(...))` pattern instead — see `docs/tailwind-extensions.md`. |
 | `.safari-safe-left` | `padding-left: env(safe-area-inset-left)` | Respect iOS left safe area. |
 | `.safari-safe-right` | `padding-right: env(safe-area-inset-right)` | Respect iOS right safe area. |
 | `.touch-target` | `min-height: 44px; min-width: 44px` | Minimum accessible square touch target. |
 | `.touch-target-wide` | `min-height: 44px; min-width: 88px` | Minimum accessible wide touch target for buttons. |
+
+Two further classes are emitted into Tailwind's `components` layer, so any
+utility passed in `className` still wins over them. Apply them through the
+`<Skeleton />` component rather than by hand — see `docs/COMPONENTS.md`.
+
+| Class | CSS output | Semantic role |
+| --- | --- | --- |
+| `.rw-skeleton` | `background-color: var(--skeleton-static)` | Static skeleton placeholder; never animates. |
+| `.rw-skeleton--shimmer` | Shimmer gradient from the `--skeleton-*` tokens, animated by `rw-skeleton-shimmer`. Reset to the static fill under `prefers-reduced-motion: reduce`. | Animated skeleton placeholder. |
 
 ## Contributor Checklist
 
@@ -159,3 +222,5 @@ These utilities are defined in `app/globals.css`.
   component when a token already represents the same role.
 - Update this file when `app/globals.css` or `tailwind.config.js` adds, removes,
   or changes theme tokens.
+- For contrast ratio requirements and how to verify new colour tokens, see
+  [docs/SEMANTIC_TOKENS_AND_CONTRAST.md](SEMANTIC_TOKENS_AND_CONTRAST.md).
