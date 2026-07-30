@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { sanitizeObject, sanitizeString } from '@/lib/sanitize';
+import { sanitizeObject, sanitizeString, sanitizeContractAddress } from '@/lib/sanitize';
 import { logResponse } from '@/lib/logger';
 
 describe('sanitizeObject', () => {
@@ -32,6 +32,22 @@ describe('sanitizeObject', () => {
       address: 'GBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
     });
     expect(result.address).toBe('GBXXXX***');
+  });
+
+  it('partially masks contract addresses/IDs', () => {
+    const result = sanitizeObject({
+      contractAddress: 'CBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+      contract_id: 'CDYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY',
+    });
+    expect(result.contractAddress).toBe('CBXXXX***');
+    expect(result.contract_id).toBe('CDYYYY***');
+    expect(JSON.stringify(result)).not.toContain('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX');
+  });
+
+  it('sanitizeContractAddress masks a raw contract address for direct call sites', () => {
+    expect(sanitizeContractAddress('CBXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')).toBe(
+      'CBXXXX***',
+    );
   });
 
   it('leaves safe fields unchanged', () => {
