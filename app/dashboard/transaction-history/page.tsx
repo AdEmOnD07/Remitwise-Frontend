@@ -17,39 +17,22 @@ import type {
   Transaction,
   TransactionStatus,
 } from "@/components/Dashboard/TransactionHistoryItem";
-
-// Guards against dateTo < dateFrom whenever either value changes.
-// Setting dateFrom after dateTo (or dateTo before dateFrom) resets the
-// invalid value so the filter always represents a valid range.
-function useDateRangeValidation(
-  dateFrom: string,
-  dateTo: string,
-  setDateFrom: (v: string) => void,
-  setDateTo: (v: string) => void,
-) {
-  useEffect(() => {
-    if (dateFrom && dateTo && dateTo < dateFrom) {
-      setDateTo("");
-    }
-  }, [dateFrom, dateTo, setDateTo]);
-}
+import { startOfDay, subDays, isSameDay, endOfDay, isBefore, isAfter } from "date-fns";
+// @ts-ignore
+import { FixedSizeList } from "react-window";
+const List = FixedSizeList as any;
 
 type Direction = "all" | "sent" | "received";
 
 type GroupKey = "today" | "yesterday" | "earlier";
 
-function startOfDay(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function getGroupKey(
+export function getGroupKey(
   date: Date,
   todayStart: Date,
   yesterdayStart: Date,
 ): GroupKey {
-  const d = startOfDay(date);
-  if (d.getTime() === todayStart.getTime()) return "today";
-  if (d.getTime() === yesterdayStart.getTime()) return "yesterday";
+  if (isSameDay(date, todayStart)) return "today";
+  if (isSameDay(date, yesterdayStart)) return "yesterday";
   return "earlier";
 }
 
@@ -84,11 +67,7 @@ const TransactionHistoryPage = () => {
   useDateRangeValidation(dateFrom, dateTo, setDateFrom, setDateTo);
 
   const todayStart = useMemo(() => startOfDay(new Date()), []);
-  const yesterdayStart = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    return startOfDay(d);
-  }, []);
+  const yesterdayStart = useMemo(() => startOfDay(subDays(new Date(), 1)), []);
 
   const groupLabels: Record<GroupKey, { label: string; helper: string }> =
     useMemo(
@@ -221,14 +200,13 @@ const TransactionHistoryPage = () => {
 
       if (dateFrom) {
         const txDate = new Date(tx.date);
-        const fromDate = new Date(dateFrom);
-        if (txDate < fromDate) return false;
+        const fromDate = startOfDay(new Date(dateFrom));
+        if (isBefore(txDate, fromDate)) return false;
       }
       if (dateTo) {
         const txDate = new Date(tx.date);
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (txDate > toDate) return false;
+        const toDate = endOfDay(new Date(dateTo));
+        if (isAfter(txDate, toDate)) return false;
       }
 
       if (query.length > 0) {
