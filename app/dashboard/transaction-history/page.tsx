@@ -19,10 +19,7 @@ import type {
   Transaction,
   TransactionStatus,
 } from "@/components/Dashboard/TransactionHistoryItem";
-import { startOfDay, subDays, isSameDay, endOfDay, isBefore, isAfter } from "date-fns";
-// @ts-ignore
-import { FixedSizeList } from "react-window";
-const List = FixedSizeList as any;
+import { FixedSizeList as List } from "react-window";
 
 type Direction = "all" | "sent" | "received";
 
@@ -37,6 +34,21 @@ export function getGroupKey(
   if (isSameDay(date, yesterdayStart)) return "yesterday";
   return "earlier";
 }
+
+export interface VirtualRowProps {
+  index: number;
+  style: React.CSSProperties;
+  data: Transaction[];
+}
+
+export const TransactionVirtualRow = ({ index, style, data }: VirtualRowProps) => {
+  const tx = data[index];
+  return (
+    <div style={style}>
+      <TransactionHistoryItem transaction={tx} />
+    </div>
+  );
+};
 
 const TransactionHistoryPage = () => {
   useSeo({
