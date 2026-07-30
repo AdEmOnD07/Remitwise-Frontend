@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type ClipboardEvent, type FormEvent } from "react";
 import { Search } from "lucide-react";
 import layoutConfig from "@/lib/config/layout.json";
+import { sanitizePastedValue } from "@/lib/validation/sanitizePaste";
 
 const { MOBILE_MAX_WIDTH } = layoutConfig.BREAKPOINTS;
 
@@ -48,6 +49,27 @@ const TransactionHistorySearchInput = ({
     onChange?.(nextValue);
   };
 
+  /**
+   * Strip HTML tags from clipboard payloads that carry a text/html MIME type.
+   * Plain-text pastes are left to the browser's default handling.
+   * This prevents literal tag markup from landing in the search field when
+   * content is copied from a rich editor or web page.
+   */
+  const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    const { clipboardData } = event;
+    if (!clipboardData || !clipboardData.types.includes("text/html")) return;
+
+    event.preventDefault();
+    const target = event.currentTarget;
+    const next = sanitizePastedValue(
+      clipboardData,
+      target.value,
+      target.selectionStart ?? target.value.length,
+      target.selectionEnd ?? target.value.length,
+    );
+    handleChange(next);
+  };
+
   return (
     <form role="search" onSubmit={handleSubmit} className="w-full max-w-4xl xl:min-w-[680px]" noValidate>
       <div className="relative">
@@ -58,6 +80,7 @@ const TransactionHistorySearchInput = ({
           type="search"
           value={value}
           onChange={(e) => handleChange(e.target.value)}
+          onPaste={handlePaste}
           placeholder={isMobile && mobilePlaceholder ? mobilePlaceholder : placeholder}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
