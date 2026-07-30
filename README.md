@@ -257,19 +257,18 @@ To run the Playwright end-to-end tests for authentication and protected routes:
 npm run test:e2e
 ```
 
-A lightweight smoke test (`npm run test:smoke`) runs automatically in a
-`pre-push` git hook (via husky — installed as part of `npm install`'s
-`prepare` script). It starts the dev server and checks that `/api/health`
-responds at all (200 healthy or 503 degraded both count — this isn't a
-dependency health check, just confirmation the app itself booted), using
-its own `playwright.smoke.config.ts` so it never depends on the root page
-rendering successfully. It's meant to be fast: no browser is launched, since
-the test only uses Playwright's `request` fixture.
+### Storybook
 
-For validating responsive breakpoints and layouts across different viewports, see the [Responsive Testing Guide](docs/RESPONSIVE_TESTING.md).
+Primitive components (e.g. `Toast`, `Nav`, the `i18n` formatters) have stories
+under `components/**/*.stories.tsx`, viewable in isolation with Storybook:
 
-For verifying components in a right-to-left (RTL) locale (Arabic, Hebrew), see the [RTL Testing Guide](docs/RTL_TESTING.md).
+```bash
+# Start the local Storybook dev server on http://localhost:6006
+npm run storybook
 
+# Build a static Storybook (output: storybook-static/)
+npm run build-storybook
+```
 
 ## Project Structure
 
