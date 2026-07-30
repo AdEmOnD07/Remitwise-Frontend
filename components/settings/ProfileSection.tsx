@@ -24,7 +24,8 @@ export function ProfileSection() {
     await new Promise((resolve) => setTimeout(resolve, 300));
   }, []);
 
-  const { saveState, triggerSave } = useAutosave(onSave);
+  const { saveState, isDirty, triggerSave } = useAutosave(onSave);
+  useSafeReload(isDirty);
 
   const handleNameChange = (value: string) => {
     setName(value);
