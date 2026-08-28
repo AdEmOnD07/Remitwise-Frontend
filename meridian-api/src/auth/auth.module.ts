@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { AuditModule } from '../audit/audit.module';
 import { AuthService } from './providers/auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from 'src/users/users.module';
@@ -27,6 +28,7 @@ import { CryptoModule } from 'src/crypto/crypto.module';
     JwtModule.registerAsync(jwtConfig.asProvider()),
     TypeOrmModule.forFeature([RefreshToken, User]),
     CryptoModule,
+    AuditModule,
   ],
   providers: [
     AuthService,

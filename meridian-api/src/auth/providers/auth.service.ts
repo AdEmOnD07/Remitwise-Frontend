@@ -7,6 +7,8 @@ import { RefreshTokenDto } from '../dto/refresh-token-dto';
 import { RefreshTokenProvider } from './refreshToken.provider';
 import { VerifyEmailProvider } from './verify-email.provider';
 import { User } from 'src/users/user.entity';
+import { AuditService } from '../../audit/audit.service';
+import { AuditAction } from '../../audit/audit-log.entity';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +26,8 @@ export class AuthService {
 
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+
+    private readonly auditService: AuditService,
   ) {}
 
   public async SignIn(signInDto: SignInDto) {
@@ -55,6 +59,14 @@ export class AuthService {
     if (user && !user.emailVerified) {
       try {
         await this.verifyEmailProvider.issueVerificationToken(user);
+
+        await this.auditService.log({
+          entityName: 'VerificationToken',
+          entityId: user.id,
+          action: AuditAction.RESEND_VERIFICATION,
+          performedById: user.id,
+          performedByEmail: user.email,
+        });
       } catch (error) {
         this.logger.error(
           `Failed to reissue verification token for ${email}: ${
